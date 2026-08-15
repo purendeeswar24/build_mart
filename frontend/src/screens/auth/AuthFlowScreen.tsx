@@ -1,0 +1,428 @@
+import React, { useState } from 'react';
+import {
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Hammer } from 'lucide-react-native';
+import { useAuth } from '../../hooks/useAuth';
+import { ROLE_OPTIONS, type UserRole } from '../../services/auth.service';
+import { validateEmail, validatePhone, validateRequired } from '../../utils/validation';
+import { colors, radii, spacing, typography } from '../../theme';
+
+type Mode = 'welcome' | 'register' | 'otp' | 'login' | 'email';
+
+type Props = {
+  asModal?: boolean;
+  onClose?: () => void;
+  onDone?: () => void;
+};
+
+export function AuthFlowScreen({ asModal, onClose, onDone }: Props) {
+  const insets = useSafeAreaInsets();
+  const { sendOtp, verifyOtp, loginEmail } = useAuth();
+
+  const [mode, setMode] = useState<Mode>(asModal ? 'login' : 'welcome');
+  const [phone, setPhone] = useState('');
+  const [fullName, setFullName] = useState('');
+  const [role, setRole] = useState<UserRole>('homeowner');
+  const [otp, setOtp] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const run = async (fn: () => Promise<void>, { finish = false } = {}) => {
+    setError(null);
+    setLoading(true);
+    try {
+      await fn();
+      if (finish) onDone?.();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Something went wrong');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <KeyboardAvoidingView
+      style={[styles.root, { paddingTop: asModal ? 12 : insets.top + 12 }]}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
+      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        {asModal ? (
+          <Pressable onPress={onClose} style={styles.closeRow}>
+            <Text style={styles.closeText}>Close</Text>
+          </Pressable>
+        ) : null}
+
+        <View style={styles.brand}>
+          <View style={styles.logoBox}>
+            <Hammer size={26} color={colors.primaryInk} />
+          </View>
+          <Text style={styles.brandTitle}>BuildMart</Text>
+          <Text style={styles.brandSub}>Materials & skilled help, delivered fast</Text>
+        </View>
+
+        {mode === 'welcome' ? (
+          <View style={styles.block}>
+            <Pressable style={styles.primaryBtn} onPress={() => setMode('register')}>
+              <Text style={styles.primaryBtnText}>Create Account</Text>
+            </Pressable>
+            <Pressable style={styles.secondaryBtn} onPress={() => setMode('login')}>
+              <Text style={styles.secondaryBtnText}>Login</Text>
+            </Pressable>
+          </View>
+        ) : null}
+
+        {mode === 'register' || mode === 'login' ? (
+          <View style={styles.block}>
+            {mode === 'register' ? (
+              <>
+                <Text style={styles.label}>Full name</Text>
+                <TextInput
+                  value={fullName}
+                  onChangeText={setFullName}
+                  placeholder="Rajesh Kumar"
+                  placeholderTextColor="#5C596A"
+                  style={styles.input}
+                />
+              </>
+            ) : null}
+
+            <Text style={styles.label}>Phone number</Text>
+            <View style={styles.phoneRow}>
+              <Text style={styles.cc}>+91</Text>
+              <TextInput
+                value={phone}
+                onChangeText={setPhone}
+                keyboardType="phone-pad"
+                maxLength={10}
+                placeholder="98765 43210"
+                placeholderTextColor="#5C596A"
+                style={styles.phoneInput}
+              />
+            </View>
+
+            {mode === 'register' ? (
+              <>
+                <Text style={styles.label}>I am a</Text>
+                <View style={styles.roles}>
+                  {ROLE_OPTIONS.map((opt) => (
+                    <Pressable
+                      key={opt.value}
+                      onPress={() => setRole(opt.value)}
+                      style={[styles.roleChip, role === opt.value && styles.roleChipOn]}
+                    >
+                      <Text style={[styles.roleText, role === opt.value && styles.roleTextOn]}>
+                        {opt.label}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+              </>
+            ) : null}
+
+            <Pressable
+              style={styles.primaryBtn}
+              disabled={loading}
+              onPress={() =>
+                run(async () => {
+                  const phoneErr = validatePhone(phone);
+                  if (phoneErr) throw new Error(phoneErr);
+                  if (mode === 'register') {
+                    const nameErr = validateRequired(fullName, 'Full name', 2);
+                    if (nameErr) throw new Error(nameErr);
+                  }
+                  await sendOtp(phone);
+                  setMode('otp');
+                })
+              }
+            >
+              {loading ? (
+                <ActivityIndicator color={colors.primaryInk} />
+              ) : (
+                <Text style={styles.primaryBtnText}>Send OTP</Text>
+              )}
+            </Pressable>
+
+            <View style={styles.orRow}>
+              <View style={styles.orLine} />
+              <Text style={styles.orText}>or</Text>
+              <View style={styles.orLine} />
+            </View>
+
+            <Pressable style={styles.secondaryBtn} onPress={() => setMode('email')}>
+              <Text style={styles.secondaryBtnText}>Continue with email</Text>
+            </Pressable>
+
+            <Pressable
+              onPress={() => setMode(mode === 'login' ? 'register' : 'login')}
+              style={styles.switchRow}
+            >
+              <Text style={styles.switchMuted}>
+                {mode === 'login' ? "Don't have an account? " : 'Already have an account? '}
+                <Text style={styles.switchAccent}>{mode === 'login' ? 'Create one' : 'Log in'}</Text>
+              </Text>
+            </Pressable>
+          </View>
+        ) : null}
+
+        {mode === 'otp' ? (
+          <View style={styles.block}>
+            <Text style={styles.label}>Enter OTP sent to +91 {phone}</Text>
+            <TextInput
+              value={otp}
+              onChangeText={setOtp}
+              keyboardType="number-pad"
+              maxLength={6}
+              placeholder="123456"
+              placeholderTextColor="#5C596A"
+              style={styles.input}
+            />
+            <Text style={styles.hint}>Demo OTP: 123456</Text>
+            <Pressable
+              style={styles.primaryBtn}
+              disabled={loading}
+              onPress={() =>
+                run(async () => {
+                  await verifyOtp({ phone, otp, fullName, role });
+                }, { finish: true })
+              }
+            >
+              {loading ? (
+                <ActivityIndicator color={colors.primaryInk} />
+              ) : (
+                <Text style={styles.primaryBtnText}>Verify & continue</Text>
+              )}
+            </Pressable>
+            <Pressable onPress={() => setMode('login')} style={styles.switchRow}>
+              <Text style={styles.switchAccent}>Change number</Text>
+            </Pressable>
+          </View>
+        ) : null}
+
+        {mode === 'email' ? (
+          <View style={styles.block}>
+            <Text style={styles.label}>Email</Text>
+            <TextInput
+              value={email}
+              onChangeText={setEmail}
+              autoCapitalize="none"
+              keyboardType="email-address"
+              placeholder="you@example.com"
+              placeholderTextColor="#5C596A"
+              style={styles.input}
+            />
+            <Text style={styles.label}>Password</Text>
+            <TextInput
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry
+              placeholder="••••••••"
+              placeholderTextColor="#5C596A"
+              style={styles.input}
+            />
+            <Pressable
+              style={styles.primaryBtn}
+              disabled={loading}
+              onPress={() =>
+                run(async () => {
+                  const emailErr = validateEmail(email);
+                  if (emailErr) throw new Error(emailErr);
+                  if (password.length < 4) throw new Error('Password must be at least 4 characters');
+                  await loginEmail(email, password);
+                }, { finish: true })
+              }
+            >
+              {loading ? (
+                <ActivityIndicator color={colors.primaryInk} />
+              ) : (
+                <Text style={styles.primaryBtnText}>Log in</Text>
+              )}
+            </Pressable>
+            <Pressable onPress={() => setMode('login')} style={styles.switchRow}>
+              <Text style={styles.switchAccent}>Use phone instead</Text>
+            </Pressable>
+          </View>
+        ) : null}
+
+        {error ? <Text style={styles.error}>{error}</Text> : null}
+      </ScrollView>
+    </KeyboardAvoidingView>
+  );
+}
+
+const styles = StyleSheet.create({
+  root: {
+    flex: 1,
+    backgroundColor: colors.secondary,
+  },
+  content: {
+    paddingHorizontal: 24,
+    paddingBottom: 40,
+  },
+  closeRow: {
+    alignSelf: 'flex-end',
+    marginBottom: 8,
+  },
+  closeText: {
+    color: colors.textMuted,
+    fontSize: 13,
+  },
+  brand: {
+    alignItems: 'center',
+    paddingTop: 28,
+    marginBottom: 28,
+  },
+  logoBox: {
+    width: 52,
+    height: 52,
+    borderRadius: 14,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 14,
+  },
+  brandTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: colors.textInverse,
+  },
+  brandSub: {
+    fontSize: 12,
+    color: '#8B889B',
+    marginTop: 4,
+    textAlign: 'center',
+  },
+  block: {
+    gap: 0,
+  },
+  label: {
+    fontSize: 11,
+    color: '#8B889B',
+    marginBottom: 6,
+    marginTop: 4,
+  },
+  input: {
+    backgroundColor: colors.secondaryMuted,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    color: colors.textInverse,
+    fontSize: 13,
+    marginBottom: 14,
+  },
+  phoneRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.secondaryMuted,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    marginBottom: 14,
+    gap: 8,
+  },
+  cc: {
+    color: colors.textInverse,
+    fontSize: 13,
+  },
+  phoneInput: {
+    flex: 1,
+    paddingVertical: 12,
+    color: colors.textInverse,
+    fontSize: 13,
+  },
+  roles: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 7,
+    marginBottom: 20,
+  },
+  roleChip: {
+    paddingHorizontal: 11,
+    paddingVertical: 7,
+    borderRadius: 9,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: '#3A3D4A',
+  },
+  roleChipOn: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  roleText: {
+    fontSize: 11,
+    color: '#C9C6D4',
+  },
+  roleTextOn: {
+    color: colors.primaryInk,
+    fontWeight: '600',
+  },
+  primaryBtn: {
+    backgroundColor: colors.primary,
+    borderRadius: 12,
+    paddingVertical: 13,
+    alignItems: 'center',
+  },
+  primaryBtnText: {
+    color: colors.primaryInk,
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  secondaryBtn: {
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: '#3A3D4A',
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: 'center',
+    marginTop: 12,
+  },
+  secondaryBtnText: {
+    color: '#C9C6D4',
+    fontSize: 13,
+  },
+  orRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginVertical: 20,
+  },
+  orLine: {
+    flex: 1,
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: '#3A3D4A',
+  },
+  orText: {
+    fontSize: 10,
+    color: '#5C596A',
+  },
+  switchRow: {
+    marginTop: 24,
+    alignItems: 'center',
+  },
+  switchMuted: {
+    fontSize: 11,
+    color: '#5C596A',
+  },
+  switchAccent: {
+    color: colors.primary,
+  },
+  hint: {
+    ...typography.micro,
+    color: '#8B889B',
+    marginBottom: 12,
+  },
+  error: {
+    marginTop: 16,
+    color: '#E57373',
+    fontSize: 12,
+    textAlign: 'center',
+  },
+});

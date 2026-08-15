@@ -1,0 +1,523 @@
+/**
+ * Local Phase 3 seed catalog.
+ * Mirrors Supabase tables so screens never hardcode product lists.
+ * Swap to live Supabase via products.service when EXPO_PUBLIC_* keys are real.
+ */
+
+import type { ImageSourcePropType } from 'react-native';
+
+export type SeedCategory = {
+  id: string;
+  name: string;
+  slug: string;
+  parent_id: string | null;
+  icon_url: string | null;
+  sort_order: number;
+  shortName: string;
+  image: ImageSourcePropType;
+};
+
+export type SeedVariant = {
+  id: string;
+  product_id: string;
+  variant_label: string;
+  attributes: Record<string, string | number | boolean>;
+  mrp: number;
+  selling_price: number;
+  stock_qty: number;
+  sku: string;
+  image_urls: string[];
+  image: ImageSourcePropType;
+  imageTint: string;
+};
+
+export type SeedProduct = {
+  id: string;
+  category_id: string;
+  brand: string;
+  title: string;
+  slug: string;
+  description: string;
+  material?: string;
+  warranty_years?: number;
+  features: string[];
+  badge?: '30 MIN' | 'BESTSELLER' | 'SALE';
+  trending?: boolean;
+  bestseller?: boolean;
+  featured?: boolean;
+};
+
+const cat = (
+  id: string,
+  name: string,
+  slug: string,
+  sort: number,
+  shortName: string,
+  image: ImageSourcePropType,
+  parent_id: string | null = null,
+): SeedCategory => ({
+  id,
+  name,
+  slug,
+  parent_id,
+  icon_url: null,
+  sort_order: sort,
+  shortName,
+  image,
+});
+
+export const SEED_CATEGORIES: SeedCategory[] = [
+  cat('c-plywood', 'Plywood & Boards', 'plywood-boards', 1, 'Plywood', require('../../assets/images/categories/plywood-boards.jpg')),
+  cat('c-building', 'Building Materials', 'building-materials', 2, 'Building', require('../../assets/images/categories/building-materials.jpg')),
+  cat('c-ceiling', 'Ceiling Solutions', 'ceiling-solutions', 3, 'Ceiling', require('../../assets/images/categories/ceiling-solutions.jpg')),
+  cat('c-electricals', 'Electricals', 'electricals', 4, 'Electricals', require('../../assets/images/categories/electricals.jpg')),
+  cat('c-adhesive', 'Adhesive & Bonding Solutions', 'adhesive-bonding', 5, 'Adhesives', require('../../assets/images/categories/adhesive-bonding.jpg')),
+  cat('c-kitchen', 'Kitchen Fixtures & Accessories', 'kitchen-fixtures', 6, 'Kitchen', require('../../assets/images/categories/kitchen-fixtures.jpg')),
+  cat('c-lighting', 'Lighting', 'lighting', 7, 'Lighting', require('../../assets/images/categories/lighting.jpg')),
+  cat('c-hardware', 'Hardware & Accessories', 'hardware-accessories', 8, 'Hardware', require('../../assets/images/categories/hardware-accessories.jpg')),
+  cat('c-paints', 'Paints', 'paints', 9, 'Paints', require('../../assets/images/categories/paints.jpg')),
+  cat('c-sanitary', 'Sanitary & Bath Fittings', 'sanitary-bath', 10, 'Sanitary', require('../../assets/images/categories/sanitary-bath.jpg')),
+  cat('c-steel', 'Industrial & Steel Supplies', 'industrial-steel', 11, 'Steel', require('../../assets/images/categories/industrial-steel.jpg')),
+  cat('c-waterproof', 'Water Proofing', 'water-proofing', 12, 'Waterproof', require('../../assets/images/categories/water-proofing.jpg')),
+  cat('c-tools', 'Tools', 'tools', 13, 'Tools', require('../../assets/images/categories/tools.jpg')),
+  cat('c-tiles', 'Tiles & Accessories', 'tiles-accessories', 14, 'Tiles', require('../../assets/images/categories/tiles-accessories.jpg')),
+  cat('c-plumbing', 'Plumbing & Pipes', 'plumbing-pipes', 15, 'Plumbing', require('../../assets/images/categories/sanitary-bath.jpg')),
+  cat('c-home', 'Home & Kitchen Essentials', 'home-kitchen', 16, 'Home', require('../../assets/images/categories/kitchen-fixtures.jpg')),
+
+  // Electricals subcategories
+  cat('c-wires', 'Wires and Cables', 'wires-cables', 1, 'Wires', require('../../assets/images/categories/electricals.jpg'), 'c-electricals'),
+  cat('c-lights-sub', 'Lights', 'electrical-lights', 2, 'Lights', require('../../assets/images/categories/lighting.jpg'), 'c-electricals'),
+  cat('c-mcb', 'MCBs & DBs', 'mcbs-dbs', 3, 'MCBs', require('../../assets/images/categories/electricals.jpg'), 'c-electricals'),
+  cat('c-switches', 'Switches & Sockets', 'switches-sockets', 4, 'Switches', require('../../assets/images/categories/electricals.jpg'), 'c-electricals'),
+
+  // Kitchen subcategories
+  cat('c-kitchen-sink', 'Kitchen Sinks', 'kitchen-sinks', 1, 'Sinks', require('../../assets/images/categories/kitchen-fixtures.jpg'), 'c-kitchen'),
+  cat('c-kitchen-faucet', 'Kitchen Taps', 'kitchen-taps', 2, 'Taps', require('../../assets/images/products/faucet.jpg'), 'c-kitchen'),
+  cat('c-kitchen-chimney', 'Chimneys & Hoods', 'kitchen-chimneys', 3, 'Chimneys', require('../../assets/images/categories/kitchen-fixtures.jpg'), 'c-kitchen'),
+  cat('c-kitchen-storage', 'Kitchen Storage', 'kitchen-storage', 4, 'Storage', require('../../assets/images/categories/hardware-accessories.jpg'), 'c-kitchen'),
+  cat('c-kitchen-appliances', 'Kitchen Appliances', 'kitchen-appliances', 5, 'Appliances', require('../../assets/images/categories/kitchen-fixtures.jpg'), 'c-kitchen'),
+
+  // Plumbing subs
+  cat('c-cpvc', 'CPVC Pipes & Fittings', 'cpvc-pipes', 1, 'CPVC', require('../../assets/images/categories/sanitary-bath.jpg'), 'c-plumbing'),
+  cat('c-upvc', 'UPVC & Drainage', 'upvc-drainage', 2, 'UPVC', require('../../assets/images/categories/sanitary-bath.jpg'), 'c-plumbing'),
+
+  // Water tanks under Sanitary
+  cat('c-tanks', 'Water Tanks', 'water-tanks', 1, 'Tanks', require('../../assets/images/products/water-tank.jpg'), 'c-sanitary'),
+  cat('c-tank-overhead', 'Overhead', 'water-tanks-overhead', 1, 'Overhead', require('../../assets/images/products/water-tank.jpg'), 'c-tanks'),
+  cat('c-tank-loft', 'Loft / Indoor', 'water-tanks-loft', 2, 'Loft', require('../../assets/images/products/water-tank.jpg'), 'c-tanks'),
+  cat('c-tank-sump', 'Underground Sump', 'water-tanks-sump', 3, 'Sump', require('../../assets/images/products/water-tank.jpg'), 'c-tanks'),
+  cat('c-tank-ss', 'Stainless Steel', 'water-tanks-ss', 4, 'SS', require('../../assets/images/products/water-tank.jpg'), 'c-tanks'),
+  cat('c-tank-acc', 'Accessories & Fittings', 'water-tanks-accessories', 5, 'Fittings', require('../../assets/images/products/faucet.jpg'), 'c-tanks'),
+];
+
+export const SEED_PRODUCTS: SeedProduct[] = [
+  {
+    id: 'p1',
+    category_id: 'c-tank-overhead',
+    brand: 'SUPREME',
+    title: 'WeatherShield 4-Layer Overhead Tank',
+    slug: 'supreme-weathershield-overhead-tank',
+    description: 'UV-shield multi-layer overhead water tank for homes and sites.',
+    material: 'Food-grade HDPE',
+    warranty_years: 10,
+    features: ['UV shield', '4 layers', '30-min delivery'],
+    badge: '30 MIN',
+    trending: true,
+    bestseller: true,
+    featured: true,
+  },
+  {
+    id: 'p2',
+    category_id: 'c-wires',
+    brand: 'POLYCAB',
+    title: 'ETIRA FR House Wire',
+    slug: 'polycab-etira-fr-wire',
+    description: 'Flame-retardant copper house wire for domestic wiring.',
+    material: 'Copper',
+    warranty_years: 5,
+    features: ['FR', 'ISI marked'],
+    badge: 'BESTSELLER',
+    trending: true,
+    bestseller: true,
+  },
+  {
+    id: 'p3',
+    category_id: 'c-building',
+    brand: 'ULTRATECH',
+    title: 'PPC Cement 50kg',
+    slug: 'ultratech-ppc-cement-50kg',
+    description: 'Portland Pozzolana Cement for general construction.',
+    features: ['50kg bag'],
+    badge: '30 MIN',
+    trending: true,
+    featured: true,
+  },
+  {
+    id: 'p4',
+    category_id: 'c-paints',
+    brand: 'ASIAN PAINTS',
+    title: 'Royale Luxury Emulsion',
+    slug: 'asian-paints-royale-luxury',
+    description: 'Premium interior emulsion with rich finish.',
+    features: ['Interior', 'Washable'],
+    badge: 'SALE',
+    trending: true,
+    featured: true,
+  },
+  {
+    id: 'p5',
+    category_id: 'c-plywood',
+    brand: 'CENTURY',
+    title: 'Sainik Plywood 8x4',
+    slug: 'century-sainik-8x4',
+    description: 'BWP grade plywood sheet for furniture and interiors.',
+    warranty_years: 7,
+    features: ['BWP', '8x4'],
+    badge: '30 MIN',
+    bestseller: true,
+  },
+  {
+    id: 'p6',
+    category_id: 'c-tank-acc',
+    brand: 'JAQUAR',
+    title: 'Pillar Cock — Chrome Finish',
+    slug: 'jaquar-pillar-cock-chrome',
+    description: 'Chrome finish pillar cock for wash basins.',
+    features: ['Chrome'],
+    featured: true,
+  },
+  {
+    id: 'p7',
+    category_id: 'c-adhesive',
+    brand: 'FEVICOL',
+    title: 'Marine NF Waterproof Adhesive',
+    slug: 'fevicol-marine-nf',
+    description: 'Waterproof adhesive for wood and laminates.',
+    features: ['Marine grade'],
+    badge: 'BESTSELLER',
+    bestseller: true,
+    featured: true,
+  },
+  {
+    id: 'p8',
+    category_id: 'c-building',
+    brand: 'SAKARNI',
+    title: 'Gypsum Plaster POP 25kg',
+    slug: 'sakarni-gypsum-plaster-25kg',
+    description: 'Smooth finish gypsum plaster for interiors.',
+    features: ['25kg'],
+    badge: '30 MIN',
+    bestseller: true,
+  },
+  {
+    id: 'p9',
+    category_id: 'c-paints',
+    brand: 'BERGER',
+    title: 'Silk Luxury Emulsion Interior',
+    slug: 'berger-silk-luxury',
+    description: 'Silk finish interior emulsion.',
+    features: ['Interior'],
+    badge: 'BESTSELLER',
+    bestseller: true,
+    featured: true,
+  },
+  {
+    id: 'p10',
+    category_id: 'c-waterproof',
+    brand: 'AARDOR',
+    title: '50 GSM Fiber Glass Mesh Roll',
+    slug: 'aardor-fiber-glass-mesh',
+    description: 'Reinforcement mesh for waterproofing coats.',
+    features: ['50 GSM'],
+    featured: true,
+  },
+  {
+    id: 'p11',
+    category_id: 'c-tiles',
+    brand: 'KAJARIA',
+    title: 'Vitrified Floor Tile 600x600',
+    slug: 'kajaria-vitrified-600',
+    description: 'Glossy vitrified floor tile for living spaces.',
+    features: ['600x600'],
+    badge: '30 MIN',
+    trending: true,
+  },
+  {
+    id: 'p12',
+    category_id: 'c-tools',
+    brand: 'STANLEY',
+    title: 'Claw Hammer 16oz',
+    slug: 'stanley-claw-hammer-16oz',
+    description: 'Fiberglass handle claw hammer for site work.',
+    features: ['16oz'],
+    trending: true,
+  },
+  {
+    id: 'p13',
+    category_id: 'c-paints',
+    brand: 'NEROLAC',
+    title: 'Excel Exterior Emulsion',
+    slug: 'nerolac-excel-exterior',
+    description: 'Weather-resistant exterior emulsion.',
+    features: ['Exterior', '10L'],
+    featured: true,
+  },
+  {
+    id: 'p14',
+    category_id: 'c-mcb',
+    brand: 'HAVELLS',
+    title: 'MCB Single Pole 16A',
+    slug: 'havells-mcb-sp-16a',
+    description: 'Single pole MCB for circuit protection.',
+    features: ['16A', 'SP'],
+    trending: true,
+  },
+  {
+    id: 'p15',
+    category_id: 'c-switches',
+    brand: 'ANCHOR',
+    title: 'Roma Modular Switch 6A',
+    slug: 'anchor-roma-switch-6a',
+    description: 'Modular switch plate for residential wiring.',
+    features: ['6A', 'Modular'],
+  },
+  {
+    id: 'p16',
+    category_id: 'c-tank-loft',
+    brand: 'SINTEX',
+    title: 'Loft Water Tank Triple Layer',
+    slug: 'sintex-loft-tank',
+    description: 'Compact loft tank for indoor installation.',
+    warranty_years: 5,
+    features: ['Triple layer', 'Indoor'],
+    badge: '30 MIN',
+    trending: true,
+  },
+  {
+    id: 'p17',
+    category_id: 'c-hardware',
+    brand: 'HETTICH',
+    title: 'Telescopic Drawer Channel',
+    slug: 'hettich-telescopic-channel',
+    description: 'Soft-close telescopic drawer slides.',
+    features: ['Soft close'],
+    bestseller: true,
+  },
+  {
+    id: 'p18',
+    category_id: 'c-steel',
+    brand: 'TATA',
+    title: 'TMT Bar 12mm Fe500D',
+    slug: 'tata-tmt-12mm',
+    description: 'High-strength TMT reinforcement bar.',
+    features: ['12mm', 'Fe500D'],
+    trending: true,
+  },
+  {
+    id: 'p19',
+    category_id: 'c-lighting',
+    brand: 'PHILIPS',
+    title: 'LED Bulb 9W Cool Daylight',
+    slug: 'philips-led-9w',
+    description: 'Energy-efficient LED bulb for homes.',
+    features: ['9W', 'B22'],
+    badge: 'SALE',
+  },
+  {
+    id: 'p20',
+    category_id: 'c-waterproof',
+    brand: 'ASIAN PAINTS',
+    title: 'SmartCare Hydroloc Xtreme',
+    slug: 'asian-smartcare-hydroloc',
+    description: 'Clear waterproofing coat for terraces and walls.',
+    features: ['Clear coat'],
+    badge: 'BESTSELLER',
+    bestseller: true,
+  },
+  {
+    id: 'p21',
+    category_id: 'c-kitchen-sink',
+    brand: 'NIRALI',
+    title: 'Single Bowl Kitchen Sink SS304',
+    slug: 'nirali-single-bowl-sink',
+    description: 'Food-grade stainless steel single bowl sink for modular kitchens.',
+    material: 'SS304',
+    warranty_years: 5,
+    features: ['SS304', 'Single bowl', 'Drainboard'],
+    badge: '30 MIN',
+    trending: true,
+    featured: true,
+  },
+  {
+    id: 'p22',
+    category_id: 'c-kitchen-faucet',
+    brand: 'JAQUAR',
+    title: 'Kitchen Sink Mixer Tap',
+    slug: 'jaquar-kitchen-mixer',
+    description: 'Chrome finish kitchen mixer with swivel spout.',
+    features: ['Chrome', 'Swivel'],
+    badge: 'BESTSELLER',
+    bestseller: true,
+    trending: true,
+  },
+  {
+    id: 'p23',
+    category_id: 'c-kitchen-chimney',
+    brand: 'FABER',
+    title: '60cm Auto-Clean Kitchen Chimney',
+    slug: 'faber-60cm-chimney',
+    description: 'Wall-mount auto-clean chimney for Indian cooking.',
+    warranty_years: 2,
+    features: ['Auto clean', '60cm', '1200 m³/hr'],
+    featured: true,
+  },
+  {
+    id: 'p24',
+    category_id: 'c-kitchen-storage',
+    brand: 'GODREJ',
+    title: 'Modular Kitchen Basket Set',
+    slug: 'godrej-kitchen-basket',
+    description: 'Pull-out wire baskets for pantry and utensils.',
+    features: ['Soft close', 'Wire basket'],
+    trending: true,
+  },
+  {
+    id: 'p25',
+    category_id: 'c-kitchen-appliances',
+    brand: 'PRESTIGE',
+    title: 'Induction Cooktop 2000W',
+    slug: 'prestige-induction-2000',
+    description: 'Portable induction cooktop for home kitchens.',
+    features: ['2000W', 'Push button'],
+    badge: 'SALE',
+    featured: true,
+  },
+  {
+    id: 'p26',
+    category_id: 'c-cpvc',
+    brand: 'ASTRAL',
+    title: 'CPVC Pipe SDR 11',
+    slug: 'astral-cpvc-sdr11',
+    description: 'Hot & cold water CPVC pipe for plumbing runs.',
+    features: ['SDR 11', 'Hot water rated'],
+    badge: '30 MIN',
+    trending: true,
+    bestseller: true,
+  },
+  {
+    id: 'p27',
+    category_id: 'c-upvc',
+    brand: 'SUPREME',
+    title: 'UPVC SWR Pipe 110mm',
+    slug: 'supreme-swr-110',
+    description: 'Drainage SWR pipe for soil & waste lines.',
+    features: ['110mm', 'SWR'],
+    featured: true,
+  },
+  {
+    id: 'p28',
+    category_id: 'c-home',
+    brand: 'BOROSIL',
+    title: 'Glass Storage Jar Set (3 pcs)',
+    slug: 'borosil-jar-set-3',
+    description: 'Airtight glass jars for kitchen staples.',
+    features: ['Airtight', '3 pcs'],
+    badge: 'SALE',
+    trending: true,
+  },
+  {
+    id: 'p29',
+    category_id: 'c-home',
+    brand: 'MILTON',
+    title: 'Thermosteel Flask 1L',
+    slug: 'milton-thermo-1l',
+    description: 'Vacuum insulated steel flask for site & home.',
+    features: ['1L', '24hr hot/cold'],
+    bestseller: true,
+  },
+  {
+    id: 'p30',
+    category_id: 'c-kitchen-sink',
+    brand: 'CARYSIL',
+    title: 'Granite Quartz Double Bowl Sink',
+    slug: 'carysil-double-bowl',
+    description: 'Premium granite composite double bowl kitchen sink.',
+    material: 'Granite quartz',
+    warranty_years: 10,
+    features: ['Double bowl', 'Granite'],
+    featured: true,
+  },
+];
+
+const tint = {
+  warm: '#EFEAE0',
+  sage: '#DDE8E1',
+  blush: '#E9DDE0',
+  olive: '#E4E7DC',
+  cream: '#F0EDE4',
+};
+
+const img = {
+  tank: require('../../assets/images/products/water-tank.jpg'),
+  wire: require('../../assets/images/products/wire.jpg'),
+  cement: require('../../assets/images/products/cement.jpg'),
+  paint: require('../../assets/images/products/paint.jpg'),
+  plywood: require('../../assets/images/products/plywood.jpg'),
+  faucet: require('../../assets/images/products/faucet.jpg'),
+  adhesive: require('../../assets/images/products/adhesive.jpg'),
+  plaster: require('../../assets/images/products/plaster.jpg'),
+  mesh: require('../../assets/images/products/mesh.jpg'),
+};
+
+export const SEED_VARIANTS: SeedVariant[] = [
+  // p1 tank
+  { id: 'v1a', product_id: 'p1', variant_label: '500L', attributes: { capacity_litres: 500, layers: 4 }, mrp: 6800, selling_price: 5200, stock_qty: 12, sku: 'SUP-TANK-500', image_urls: [], image: img.tank, imageTint: tint.warm },
+  { id: 'v1b', product_id: 'p1', variant_label: '1000L', attributes: { capacity_litres: 1000, layers: 4 }, mrp: 10500, selling_price: 8200, stock_qty: 18, sku: 'SUP-TANK-1000', image_urls: [], image: img.tank, imageTint: tint.warm },
+  { id: 'v1c', product_id: 'p1', variant_label: '1500L', attributes: { capacity_litres: 1500, layers: 4 }, mrp: 14200, selling_price: 11200, stock_qty: 8, sku: 'SUP-TANK-1500', image_urls: [], image: img.tank, imageTint: tint.warm },
+  { id: 'v1d', product_id: 'p1', variant_label: '2000L', attributes: { capacity_litres: 2000, layers: 4 }, mrp: 18500, selling_price: 14500, stock_qty: 5, sku: 'SUP-TANK-2000', image_urls: [], image: img.tank, imageTint: tint.warm },
+  // p2 wire
+  { id: 'v2a', product_id: 'p2', variant_label: '1.0 sq.mm', attributes: { size: '1.0' }, mrp: 1899, selling_price: 1499, stock_qty: 40, sku: 'POLY-FR-10', image_urls: [], image: img.wire, imageTint: tint.olive },
+  { id: 'v2b', product_id: 'p2', variant_label: '1.5 sq.mm', attributes: { size: '1.5' }, mrp: 2499, selling_price: 1999, stock_qty: 55, sku: 'POLY-FR-15', image_urls: [], image: img.wire, imageTint: tint.olive },
+  { id: 'v2c', product_id: 'p2', variant_label: '2.5 sq.mm', attributes: { size: '2.5' }, mrp: 3499, selling_price: 2899, stock_qty: 30, sku: 'POLY-FR-25', image_urls: [], image: img.wire, imageTint: tint.olive },
+  // singles
+  { id: 'v3', product_id: 'p3', variant_label: '50kg', attributes: { weight_kg: 50 }, mrp: 420, selling_price: 370, stock_qty: 200, sku: 'ULT-PPC-50', image_urls: [], image: img.cement, imageTint: tint.cream },
+  { id: 'v4a', product_id: 'p4', variant_label: '4L', attributes: { volume_l: 4, finish: 'Matt' }, mrp: 1899, selling_price: 1599, stock_qty: 25, sku: 'AP-ROY-4', image_urls: [], image: img.paint, imageTint: tint.blush },
+  { id: 'v4b', product_id: 'p4', variant_label: '10L', attributes: { volume_l: 10, finish: 'Matt' }, mrp: 4299, selling_price: 3699, stock_qty: 20, sku: 'AP-ROY-10', image_urls: [], image: img.paint, imageTint: tint.blush },
+  { id: 'v5', product_id: 'p5', variant_label: '18mm', attributes: { thickness_mm: 18 }, mrp: 2899, selling_price: 2450, stock_qty: 40, sku: 'CEN-SAI-18', image_urls: [], image: img.plywood, imageTint: tint.warm },
+  { id: 'v6', product_id: 'p6', variant_label: 'Standard', attributes: { finish: 'Chrome' }, mrp: 1890, selling_price: 1600, stock_qty: 15, sku: 'JAQ-PC-01', image_urls: [], image: img.faucet, imageTint: tint.olive },
+  { id: 'v7a', product_id: 'p7', variant_label: '1kg', attributes: { weight_kg: 1 }, mrp: 380, selling_price: 299, stock_qty: 60, sku: 'FEV-MAR-1', image_urls: [], image: img.adhesive, imageTint: tint.sage },
+  { id: 'v7b', product_id: 'p7', variant_label: '5kg', attributes: { weight_kg: 5 }, mrp: 680, selling_price: 549, stock_qty: 35, sku: 'FEV-MAR-5', image_urls: [], image: img.adhesive, imageTint: tint.sage },
+  { id: 'v8', product_id: 'p8', variant_label: '25kg', attributes: { weight_kg: 25 }, mrp: 420, selling_price: 355, stock_qty: 80, sku: 'SAK-POP-25', image_urls: [], image: img.plaster, imageTint: tint.cream },
+  { id: 'v9a', product_id: 'p9', variant_label: '4L', attributes: { volume_l: 4, finish: 'Silk' }, mrp: 1299, selling_price: 1099, stock_qty: 22, sku: 'BER-SILK-4', image_urls: [], image: img.paint, imageTint: tint.blush },
+  { id: 'v9b', product_id: 'p9', variant_label: '10L', attributes: { volume_l: 10, finish: 'Silk' }, mrp: 2780, selling_price: 2340, stock_qty: 18, sku: 'BER-SILK-10', image_urls: [], image: img.paint, imageTint: tint.blush },
+  { id: 'v10', product_id: 'p10', variant_label: '50m', attributes: { length_m: 50 }, mrp: 890, selling_price: 720, stock_qty: 28, sku: 'AAR-MESH-50', image_urls: [], image: img.mesh, imageTint: tint.olive },
+  { id: 'v11', product_id: 'p11', variant_label: 'Box of 4', attributes: { size: '600x600' }, mrp: 980, selling_price: 820, stock_qty: 50, sku: 'KAJ-600-4', image_urls: [], image: img.plaster, imageTint: tint.cream },
+  { id: 'v12', product_id: 'p12', variant_label: '16oz', attributes: { weight_oz: 16 }, mrp: 699, selling_price: 549, stock_qty: 40, sku: 'STA-HAM-16', image_urls: [], image: img.adhesive, imageTint: tint.warm },
+  { id: 'v13', product_id: 'p13', variant_label: '10L', attributes: { volume_l: 10, finish: 'Exterior' }, mrp: 3520, selling_price: 3120, stock_qty: 16, sku: 'NER-EX-10', image_urls: [], image: img.paint, imageTint: tint.olive },
+  { id: 'v14', product_id: 'p14', variant_label: '16A', attributes: { amps: 16 }, mrp: 320, selling_price: 265, stock_qty: 70, sku: 'HAV-MCB-16', image_urls: [], image: img.wire, imageTint: tint.sage },
+  { id: 'v15', product_id: 'p15', variant_label: '6A White', attributes: { amps: 6 }, mrp: 120, selling_price: 89, stock_qty: 120, sku: 'ANC-ROM-6', image_urls: [], image: img.wire, imageTint: tint.cream },
+  { id: 'v16a', product_id: 'p16', variant_label: '500L', attributes: { capacity_litres: 500, layers: 3 }, mrp: 5600, selling_price: 4499, stock_qty: 10, sku: 'SIN-LOFT-500', image_urls: [], image: img.tank, imageTint: tint.warm },
+  { id: 'v16b', product_id: 'p16', variant_label: '750L', attributes: { capacity_litres: 750, layers: 3 }, mrp: 7200, selling_price: 5899, stock_qty: 7, sku: 'SIN-LOFT-750', image_urls: [], image: img.tank, imageTint: tint.warm },
+  { id: 'v17', product_id: 'p17', variant_label: '18 inch', attributes: { length_inch: 18 }, mrp: 890, selling_price: 720, stock_qty: 45, sku: 'HET-TEL-18', image_urls: [], image: img.adhesive, imageTint: tint.sage },
+  { id: 'v18', product_id: 'p18', variant_label: '12mm', attributes: { diameter_mm: 12 }, mrp: 78, selling_price: 64, stock_qty: 500, sku: 'TATA-TMT-12', image_urls: [], image: img.mesh, imageTint: tint.olive },
+  { id: 'v19', product_id: 'p19', variant_label: '9W', attributes: { watts: 9 }, mrp: 199, selling_price: 129, stock_qty: 200, sku: 'PHI-LED-9', image_urls: [], image: img.paint, imageTint: tint.cream },
+  { id: 'v20', product_id: 'p20', variant_label: '20L', attributes: { volume_l: 20 }, mrp: 2200, selling_price: 1850, stock_qty: 14, sku: 'AP-HYD-20', image_urls: [], image: img.paint, imageTint: tint.sage },
+  { id: 'v21', product_id: 'p21', variant_label: '37x18 inch', attributes: { size: '37x18' }, mrp: 6200, selling_price: 4899, stock_qty: 18, sku: 'NIR-SINK-3718', image_urls: [], image: img.faucet, imageTint: tint.cream },
+  { id: 'v22', product_id: 'p22', variant_label: 'Chrome', attributes: { finish: 'Chrome' }, mrp: 2890, selling_price: 2399, stock_qty: 22, sku: 'JAQ-KIT-01', image_urls: [], image: img.faucet, imageTint: tint.olive },
+  { id: 'v23', product_id: 'p23', variant_label: '60cm Black', attributes: { width_cm: 60 }, mrp: 18990, selling_price: 14990, stock_qty: 6, sku: 'FAB-CH-60', image_urls: [], image: img.plywood, imageTint: tint.warm },
+  { id: 'v24', product_id: 'p24', variant_label: 'Set of 3', attributes: { pieces: 3 }, mrp: 3499, selling_price: 2799, stock_qty: 20, sku: 'GOD-BAS-3', image_urls: [], image: img.adhesive, imageTint: tint.sage },
+  { id: 'v25', product_id: 'p25', variant_label: '2000W', attributes: { watts: 2000 }, mrp: 3999, selling_price: 2899, stock_qty: 30, sku: 'PRE-IND-2K', image_urls: [], image: img.paint, imageTint: tint.blush },
+  { id: 'v26a', product_id: 'p26', variant_label: '3/4 inch × 3m', attributes: { size: '3/4', length_m: 3 }, mrp: 420, selling_price: 349, stock_qty: 120, sku: 'AST-CPVC-34', image_urls: [], image: img.mesh, imageTint: tint.olive },
+  { id: 'v26b', product_id: 'p26', variant_label: '1 inch × 3m', attributes: { size: '1', length_m: 3 }, mrp: 560, selling_price: 459, stock_qty: 90, sku: 'AST-CPVC-1', image_urls: [], image: img.mesh, imageTint: tint.olive },
+  { id: 'v27', product_id: 'p27', variant_label: '110mm × 3m', attributes: { diameter_mm: 110, length_m: 3 }, mrp: 680, selling_price: 549, stock_qty: 75, sku: 'SUP-SWR-110', image_urls: [], image: img.mesh, imageTint: tint.cream },
+  { id: 'v28', product_id: 'p28', variant_label: '500/750/1000ml', attributes: { pieces: 3 }, mrp: 899, selling_price: 699, stock_qty: 40, sku: 'BOR-JAR-3', image_urls: [], image: img.plaster, imageTint: tint.blush },
+  { id: 'v29', product_id: 'p29', variant_label: '1L Steel', attributes: { volume_l: 1 }, mrp: 1299, selling_price: 999, stock_qty: 35, sku: 'MIL-TH-1L', image_urls: [], image: img.tank, imageTint: tint.sage },
+  { id: 'v30', product_id: 'p30', variant_label: 'Double bowl', attributes: { bowls: 2 }, mrp: 18900, selling_price: 15499, stock_qty: 8, sku: 'CAR-DB-01', image_urls: [], image: img.faucet, imageTint: tint.warm },
+];
+
+export const SEED_BANNERS = [
+  require('../../assets/images/banners/hero-1.jpg'),
+  require('../../assets/images/banners/hero-2.jpg'),
+];
+
+export const SEED_SALE_BANNER = require('../../assets/images/banners/sale.jpg');

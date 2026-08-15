@@ -1,0 +1,51 @@
+{
+  "expo": {
+    "name": "BuildMart",
+    "slug": "buildmart-app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/branding/app-icon.png",
+    "userInterfaceStyle": "light",
+    "scheme": "buildmart",
+    "splash": {
+      "image": "./assets/images/branding/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0A0A0A"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.buildmart.app",
+      "buildNumber": "1",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "BuildMart uses your location to check 30-minute delivery availability."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#0A0A0A",
+        "foregroundImage": "./assets/images/branding/app-icon.png"
+      },
+      "package": "com.buildmart.app",
+      "versionCode": 1,
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "INTERNET"
+      ],
+      "predictiveBackGestureEnabled": false,
+      "playStoreUrl": "https://play.google.com/store/apps/details?id=com.buildmart.app"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-image"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "00000000-0000-0000-0000-000000000000"
+      }
+    },
+    "owner": "buildmart"
+  }
+}
