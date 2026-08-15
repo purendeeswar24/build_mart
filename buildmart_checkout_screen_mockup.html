@@ -1,0 +1,41 @@
+<div style="background:var(--surface-1);border-radius:20px;padding:1.5rem;display:flex;justify-content:center">
+<div style="width:340px;background:#FCFAF5;border-radius:28px;overflow:hidden;font-family:var(--font-sans);border:0.5px solid var(--border-strong)">
+
+<div style="padding:14px 16px 0;display:flex;align-items:center;gap:10px">
+<i class="ti ti-arrow-left" style="font-size:18px;color:#1C1B17" aria-hidden="true"></i>
+<div style="font-size:14px;font-weight:500;color:#1C1B17">Checkout</div>
+</div>
+
+<div style="padding:14px 16px 0">
+<div style="font-size:10px;color:#82806F;margin-bottom:6px">Delivering to</div>
+<div style="background:#fff;border:0.5px solid #E5DFCE;border-radius:12px;padding:11px 12px;display:flex;justify-content:space-between;align-items:center">
+<div style="display:flex;gap:8px;align-items:flex-start"><i class="ti ti-map-pin" style="font-size:15px;color:#8A6A2E;margin-top:1px" aria-hidden="true"></i>
+<div><div style="font-size:11px;color:#1C1B17;font-weight:500">Site — Plot 42, Sector 54</div><div style="font-size:9px;color:#82806F;margin-top:1px">Gurugram, Haryana 122001</div></div></div>
+<span onclick="sendPrompt('Change the delivery address')" style="cursor:pointer;font-size:10px;color:#8A6A2E">Change</span>
+</div>
+
+<div style="font-size:10px;color:#82806F;margin:14px 0 6px">Payment method</div>
+<div onclick="sendPrompt('Select UPI as payment method')" style="cursor:pointer;background:#181A22;border-radius:12px;padding:11px 12px;display:flex;align-items:center;gap:9px;margin-bottom:7px">
+<i class="ti ti-circle-check-filled" style="font-size:16px;color:#F0A63B" aria-hidden="true"></i>
+<i class="ti ti-qrcode" style="font-size:16px;color:#F4EFE3" aria-hidden="true"></i>
+<span style="font-size:12px;color:#F4EFE3">UPI</span></div>
+<div onclick="sendPrompt('Select Card as payment method')" style="cursor:pointer;background:#fff;border:0.5px solid #E5DFCE;border-radius:12px;padding:11px 12px;display:flex;align-items:center;gap:9px;margin-bottom:7px">
+<i class="ti ti-circle" style="font-size:16px;color:#B0AB9C" aria-hidden="true"></i>
+<i class="ti ti-credit-card" style="font-size:16px;color:#4A4636" aria-hidden="true"></i>
+<span style="font-size:12px;color:#4A4636">Card / Netbanking</span></div>
+<div onclick="sendPrompt('Select Cash on Delivery as payment method')" style="cursor:pointer;background:#fff;border:0.5px solid #E5DFCE;border-radius:12px;padding:11px 12px;display:flex;align-items:center;gap:9px">
+<i class="ti ti-circle" style="font-size:16px;color:#B0AB9C" aria-hidden="true"></i>
+<i class="ti ti-cash" style="font-size:16px;color:#4A4636" aria-hidden="true"></i>
+<span style="font-size:12px;color:#4A4636">Cash on delivery</span></div>
+
+<div style="margin-top:14px;background:#fff;border:0.5px solid #E5DFCE;border-radius:12px;padding:12px">
+<div style="display:flex;justify-content:space-between;font-size:11px;color:#82806F;margin-bottom:5px"><span>3 items</span><span>₹8,840</span></div>
+<div style="display:flex;justify-content:space-between;font-size:11px;color:#82806F;margin-bottom:5px"><span>Delivery</span><span style="color:#4A8A5C">Free</span></div>
+<div style="display:flex;justify-content:space-between;font-size:13px;font-weight:500;color:#1C1B17;padding-top:7px;border-top:0.5px solid #E5DFCE"><span>Total</span><span>₹8,840</span></div>
+</div>
+</div>
+
+<div style="padding:16px">
+<div onclick="sendPrompt('Place the order and open Razorpay payment')" style="cursor:pointer;background:#F0A63B;color:#42280A;text-align:center;padding:13px;border-radius:12px;font-size:13px;font-weight:500">Place order · ₹8,840</div>
+</div>
+</div></div>

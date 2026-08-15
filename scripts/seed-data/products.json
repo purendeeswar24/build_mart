@@ -1,0 +1,20 @@
+[
+  {
+    "id": "seed-tank-1000",
+    "name": "Overhead Water Tank 1000L",
+    "category": "water-tanks",
+    "query": "water tank plastic"
+  },
+  {
+    "id": "seed-pvc-pipe",
+    "name": "PVC Pipe 1 inch",
+    "category": "building-materials",
+    "query": "PVC pipe"
+  },
+  {
+    "id": "seed-paint",
+    "name": "Interior Emulsion Paint",
+    "category": "paints",
+    "query": "paint bucket"
+  }
+]
