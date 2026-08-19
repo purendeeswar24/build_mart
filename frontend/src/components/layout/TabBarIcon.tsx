@@ -10,7 +10,7 @@ type Props = {
   focused?: boolean;
 };
 
-export function TabBarIcon({ icon: Icon, color, size = 22, focused }: Props) {
+export function TabBarIcon({ icon: Icon, color, size = 18, focused }: Props) {
   return (
     <View style={[styles.wrap, focused && styles.focused]}>
       <Icon size={size} color={color} strokeWidth={focused ? 2.4 : 2} />
@@ -22,10 +22,10 @@ const styles = StyleSheet.create({
   wrap: {
     alignItems: 'center',
     justifyContent: 'center',
+    minHeight: 22,
   },
   focused: {
-    borderBottomWidth: 2,
+    borderBottomWidth: 1.5,
     borderBottomColor: colors.primary,
-    paddingBottom: 2,
   },
 });

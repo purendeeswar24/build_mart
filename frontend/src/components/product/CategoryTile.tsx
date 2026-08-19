@@ -9,7 +9,7 @@ const H_PAD = 20;
 /** Compact 4-up home strip — less vertical space */
 export const CATEGORY_TILE_SIZE = (Dimensions.get('window').width - H_PAD * 2 - GAP * 3) / 4;
 /** Mini size for horizontal scroller */
-export const CATEGORY_MINI_SIZE = 76;
+export const CATEGORY_MINI_SIZE = 124;
 
 type Props = {
   category: CatalogCategory;
@@ -18,6 +18,7 @@ type Props = {
   compact?: boolean;
   size?: number;
   mini?: boolean;
+  lightLabel?: boolean;
 };
 
 export function CategoryTile({
@@ -27,6 +28,7 @@ export function CategoryTile({
   compact = false,
   size,
   mini = false,
+  lightLabel = false,
 }: Props) {
   const dim = size ?? (mini ? CATEGORY_MINI_SIZE : CATEGORY_TILE_SIZE);
   const scale = useRef(new Animated.Value(1)).current;
@@ -42,7 +44,7 @@ export function CategoryTile({
       onPressOut={() =>
         Animated.spring(scale, { toValue: 1, useNativeDriver: true, speed: 20, bounciness: 6 }).start()
       }
-      style={[{ width: dim, alignItems: 'center', gap: mini ? 4 : 6 }, style]}
+      style={[{ width: dim, alignItems: 'center', gap: mini ? 6 : 6 }, style]}
     >
       <Animated.View
         style={[
@@ -54,12 +56,16 @@ export function CategoryTile({
       >
         <SafeImage
           source={category.image}
-          style={{ width: '100%', height: '100%', borderRadius: mini ? radii.sm : radii.md }}
+          style={{ width: '100%', height: '100%', borderRadius: radii.md }}
           contentFit="cover"
-          transition={220}
+          transition={0}
+          recyclingKey={category.id}
         />
       </Animated.View>
-      <Text style={[styles.label, mini && styles.labelMini]} numberOfLines={2}>
+      <Text
+        style={[styles.label, mini && styles.labelMini, lightLabel && styles.labelLight]}
+        numberOfLines={2}
+      >
         {compact || mini ? category.shortName : category.name}
       </Text>
     </Pressable>
@@ -76,7 +82,7 @@ const styles = StyleSheet.create({
     ...shadows.soft,
   },
   tileMini: {
-    borderRadius: radii.sm,
+    borderRadius: radii.md,
   },
   label: {
     ...typography.micro,
@@ -87,7 +93,10 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   labelMini: {
-    fontSize: 9,
-    lineHeight: 11,
+    fontSize: 12,
+    lineHeight: 15,
+  },
+  labelLight: {
+    color: colors.textInverse,
   },
 });

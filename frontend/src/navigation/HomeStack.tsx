@@ -6,23 +6,26 @@ import { CategoryDetailScreen } from '../screens/category/CategoryDetailScreen';
 import { ProductDetailScreen } from '../screens/product/ProductDetailScreen';
 import { CapacityCalculatorScreen } from '../screens/tools/CapacityCalculatorScreen';
 import type { HomeStackParamList } from './types';
+import { withHomeBack } from './screenOptions';
 
 const Stack = createNativeStackNavigator<HomeStackParamList>();
 
 type Props = {
   onOpenCart: () => void;
   onOpenAccount: () => void;
+  onOpenAbout: () => void;
 };
 
-export function HomeStack({ onOpenCart, onOpenAccount }: Props) {
+export function HomeStack({ onOpenCart, onOpenAccount, onOpenAbout }: Props) {
   return (
-    <Stack.Navigator>
+    <Stack.Navigator screenOptions={({ navigation }) => withHomeBack(navigation)}>
       <Stack.Screen name="Home" options={{ headerShown: false }}>
         {({ navigation }) => (
           <HomeScreen
             onSearchPress={() => navigation.navigate('Search')}
             onCartPress={onOpenCart}
             onProfilePress={onOpenAccount}
+            onAboutPress={onOpenAbout}
             onLocationPress={() =>
               navigation.getParent()?.navigate('AccountTab', {
                 screen: 'AddressEdit',
@@ -42,8 +45,6 @@ export function HomeStack({ onOpenCart, onOpenAccount }: Props) {
         name="CategoryDetail"
         options={({ route }) => ({
           title: route.params.title,
-          headerShadowVisible: false,
-          headerStyle: { backgroundColor: '#E8F1F8' },
         })}
       >
         {({ route, navigation }) => (
@@ -59,8 +60,6 @@ export function HomeStack({ onOpenCart, onOpenAccount }: Props) {
         name="ProductDetail"
         options={{
           title: 'Product',
-          headerShadowVisible: false,
-          headerStyle: { backgroundColor: '#E8F1F8' },
         }}
       >
         {({ route, navigation }) => (
@@ -75,8 +74,6 @@ export function HomeStack({ onOpenCart, onOpenAccount }: Props) {
         name="CapacityCalculator"
         options={{
           title: 'Capacity calculator',
-          headerShadowVisible: false,
-          headerStyle: { backgroundColor: '#E8F1F8' },
         }}
       >
         {({ navigation }) => (
@@ -94,7 +91,7 @@ export function HomeStack({ onOpenCart, onOpenAccount }: Props) {
       <Stack.Screen
         name="Search"
         component={SearchScreen}
-        options={{ title: 'Search', headerShadowVisible: false }}
+        options={{ title: 'Search' }}
       />
     </Stack.Navigator>
   );

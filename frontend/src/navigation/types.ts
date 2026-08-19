@@ -4,6 +4,7 @@ export type RootTabParamList = {
   CartTab: undefined;
   OrdersTab: undefined;
   AccountTab: undefined;
+  AboutTab: undefined;
 };
 
 export type HomeStackParamList = {

@@ -77,10 +77,12 @@ export function OrderListScreen({ onOpenOrder, onLoginPress, onBrowse }: Props) 
     return (
       <View style={styles.screen}>
         <EmptyState
+          tone="dark"
           icon={Package}
           title="Orders"
           message="Log in to track deliveries and reorder past purchases."
           actionLabel="Log in"
+          features={['30-min delivery', 'Live tracking', 'One-tap reorder']}
           onAction={() => {
             openLoginModal();
             onLoginPress?.();
@@ -102,6 +104,7 @@ export function OrderListScreen({ onOpenOrder, onLoginPress, onBrowse }: Props) 
     return (
       <View style={styles.screen}>
         <EmptyState
+          tone="dark"
           icon={Package}
           title="Couldn’t load orders"
           message={error}
@@ -116,6 +119,7 @@ export function OrderListScreen({ onOpenOrder, onLoginPress, onBrowse }: Props) 
     return (
       <View style={styles.screen}>
         <EmptyState
+          tone="dark"
           icon={Package}
           title="No orders yet"
           message="Browse materials, add to cart, and checkout — orders appear here."
@@ -180,21 +184,21 @@ export function OrderListScreen({ onOpenOrder, onLoginPress, onBrowse }: Props) 
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.background },
+  screen: { flex: 1, backgroundColor: colors.secondary },
   list: { padding: spacing.lg, gap: 10 },
   card: {
-    backgroundColor: colors.surface,
+    backgroundColor: colors.secondaryMuted,
     borderRadius: radii.lg,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
+    borderColor: '#3A3D4A',
     padding: 12,
     marginBottom: 10,
   },
   cardTop: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 },
-  orderId: { fontSize: 13, fontWeight: '600', color: colors.text },
-  meta: { ...typography.micro, color: colors.textSecondary, marginTop: 2 },
+  orderId: { fontSize: 13, fontWeight: '600', color: colors.textInverse },
+  meta: { ...typography.micro, color: '#C4C0CE', marginTop: 2 },
   badge: {
-    backgroundColor: colors.primaryMuted,
+    backgroundColor: colors.primary,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 7,
@@ -202,6 +206,6 @@ const styles = StyleSheet.create({
   },
   badgeText: { fontSize: 10, color: colors.primaryInk, fontWeight: '600' },
   thumbs: { flexDirection: 'row', gap: 6, marginBottom: 8 },
-  thumb: { width: 40, height: 40, borderRadius: 8, backgroundColor: colors.surfaceMuted },
-  total: { fontSize: 13, fontWeight: '700', color: colors.text },
+  thumb: { width: 40, height: 40, borderRadius: 8, backgroundColor: '#2A2A2A' },
+  total: { fontSize: 13, fontWeight: '700', color: colors.textInverse },
 });
