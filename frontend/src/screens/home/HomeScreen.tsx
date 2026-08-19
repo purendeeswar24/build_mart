@@ -231,30 +231,42 @@ function BuildmartHero({ isWide, compact }: { isWide: boolean; compact: boolean 
 function AboutSection({
   isWide,
   compact,
+  hPad,
   onReadMore,
   onLayout,
 }: {
   isWide: boolean;
   compact: boolean;
+  hPad: number;
   onReadMore?: () => void;
   onLayout?: (e: LayoutChangeEvent) => void;
 }) {
   return (
-    <View style={styles.about} onLayout={onLayout}>
+    <View
+      style={[
+        styles.about,
+        { marginHorizontal: -hPad, paddingHorizontal: isWide ? 28 : hPad },
+      ]}
+      onLayout={onLayout}
+    >
       <View style={styles.aboutHeading}>
         <View style={styles.aboutHeadingInner}>
           <View style={styles.aboutHeadingRow}>
-            <Text style={[styles.aboutTitle, compact && styles.aboutTitleCompact]}>ABOUT</Text>
-            <Text style={[styles.aboutTitle, compact && styles.aboutTitleCompact, styles.aboutTitleAccent]}>US</Text>
+            <View style={styles.aboutTitleBlock}>
+              <Text style={[styles.aboutTitle, compact && styles.aboutTitleCompact]}>ABOUT</Text>
+              <View style={styles.aboutRule} />
+            </View>
+            <Text style={[styles.aboutTitle, compact && styles.aboutTitleCompact, styles.aboutTitleAccent]}>
+              US
+            </Text>
           </View>
-          <View style={styles.aboutRule} />
         </View>
       </View>
       <View style={isWide ? styles.aboutWide : styles.aboutNarrow}>
-        <View style={styles.aboutPhotoWrap}>
+        <View style={[styles.aboutPhotoWrap, compact && styles.aboutPhotoWrapCompact]}>
           <Image
             source={ABOUT_IMAGE}
-            style={styles.aboutPhoto}
+            style={[styles.aboutPhoto, compact && styles.aboutPhotoCompact]}
             contentFit="cover"
             cachePolicy="memory-disk"
             priority="high"
@@ -285,7 +297,7 @@ function AboutSection({
             accessibilityLabel="Read more about Buildmart"
           >
             <Text style={styles.aboutCtaText}>READ MORE</Text>
-            <ArrowRight size={14} color={colors.text} />
+            <ArrowRight size={14} color="#FFFFFF" />
           </Pressable>
         </View>
       </View>
@@ -438,15 +450,6 @@ export function HomeScreen({
           <BuildmartHero isWide={isWide} compact={!isWide} />
         </View>
 
-        <AboutSection
-          isWide={isWide}
-          compact={!isWide}
-          onReadMore={onAboutPress}
-          onLayout={(e) => {
-            aboutOffsetY.current = e.nativeEvent.layout.y;
-          }}
-        />
-
         <View style={styles.belowHero}>
           <ScrollView
             ref={bannerRef}
@@ -521,6 +524,16 @@ export function HomeScreen({
             </Pressable>
           </HScroll>
         </View>
+
+        <AboutSection
+          isWide={isWide}
+          compact={!isWide}
+          hPad={hPad}
+          onReadMore={onAboutPress}
+          onLayout={(e) => {
+            aboutOffsetY.current = e.nativeEvent.layout.y;
+          }}
+        />
 
         <Section
           title="Trending products"
@@ -834,91 +847,104 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   about: {
-    marginTop: 20,
-    backgroundColor: 'transparent',
+    marginTop: 28,
+    backgroundColor: '#000000',
     overflow: 'hidden',
-    paddingTop: 8,
-    paddingBottom: 30,
+    paddingTop: 36,
+    paddingBottom: 44,
   },
   aboutWide: {
     flexDirection: 'row',
-    alignItems: 'center',
-    minHeight: 300,
+    alignItems: 'stretch',
+    minHeight: 340,
+    gap: 28,
   },
   aboutNarrow: {
     flexDirection: 'column',
-    gap: 20,
+    gap: 22,
   },
   aboutPhotoWrap: {
     flex: 1.15,
     width: '100%',
-    minHeight: 260,
-    borderRadius: radii.xl,
+    minHeight: 300,
+    borderTopLeftRadius: 4,
+    borderBottomLeftRadius: 4,
+    borderTopRightRadius: 36,
+    borderBottomRightRadius: 36,
     overflow: 'hidden',
-    ...shadows.card,
+    backgroundColor: '#111111',
+  },
+  aboutPhotoWrapCompact: {
+    minHeight: 220,
+    borderTopRightRadius: 28,
+    borderBottomRightRadius: 28,
   },
   aboutPhoto: {
     width: '100%',
     height: '100%',
-    minHeight: 260,
+    minHeight: 300,
+  },
+  aboutPhotoCompact: {
+    minHeight: 220,
   },
   aboutCopy: {
     flex: 1,
     justifyContent: 'center',
   },
   aboutCopyWide: {
-    marginLeft: 20,
-    paddingLeft: 10,
+    paddingLeft: 8,
+    paddingVertical: 8,
   },
   aboutHeading: {
     alignItems: 'center',
-    marginBottom: 20,
-    paddingBottom: 10,
+    marginBottom: 28,
     width: '100%',
   },
   aboutHeadingInner: {
     alignItems: 'center',
-    paddingHorizontal: 14,
   },
   aboutHeadingRow: {
     flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: 8,
+    alignItems: 'flex-end',
+    gap: 10,
+  },
+  aboutTitleBlock: {
+    alignItems: 'stretch',
   },
   aboutTitle: {
-    color: colors.text,
-    fontSize: 30,
-    lineHeight: 36,
+    color: '#FFFFFF',
+    fontSize: 32,
+    lineHeight: 38,
     fontWeight: '800',
-    letterSpacing: 1.2,
+    letterSpacing: 1.4,
   },
   aboutTitleCompact: {
-    fontSize: 22,
-    lineHeight: 26,
+    fontSize: 24,
+    lineHeight: 28,
   },
   aboutTitleAccent: {
     color: colors.primary,
   },
   aboutRule: {
     width: '100%',
-    height: 1,
-    backgroundColor: colors.border,
-    marginTop: 8,
+    height: 1.5,
+    backgroundColor: '#FFFFFF',
+    marginTop: 6,
   },
   aboutBody: {
-    color: colors.textSecondary,
-    fontSize: 19,
-    lineHeight: 27,
-    maxWidth: 460,
-    marginBottom: 12,
+    color: '#FFFFFF',
+    fontSize: 16,
+    lineHeight: 26,
+    maxWidth: 520,
+    marginBottom: 14,
   },
   aboutBodyCompact: {
     fontSize: 15,
-    lineHeight: 22,
+    lineHeight: 23,
     maxWidth: '100%',
   },
   aboutLeadDark: {
-    color: colors.text,
+    color: '#FFFFFF',
     fontWeight: '800',
   },
   aboutLeadGold: {
@@ -926,22 +952,21 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   aboutCta: {
-    marginTop: 20,
-    marginBottom: 30,
+    marginTop: 10,
     alignSelf: 'flex-start',
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
     borderWidth: 1,
-    borderColor: colors.text,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+    borderColor: '#FFFFFF',
+    paddingHorizontal: 18,
+    paddingVertical: 11,
   },
   aboutCtaText: {
-    color: colors.text,
+    color: '#FFFFFF',
     fontSize: 12,
     fontWeight: '700',
-    letterSpacing: 1,
+    letterSpacing: 1.2,
   },
   heroEyebrow: {
     ...typography.micro,
