@@ -10,6 +10,17 @@ export function isRazorpayConfigured(): boolean {
   );
 }
 
+export function isWebhookConfigured(): boolean {
+  return !!env.RAZORPAY_WEBHOOK_SECRET && env.RAZORPAY_WEBHOOK_SECRET !== 'your-webhook-secret';
+}
+
+function timingSafeEqualStr(left: string, right: string): boolean {
+  const a = Buffer.from(left);
+  const b = Buffer.from(right);
+  if (a.length !== b.length) return false;
+  return crypto.timingSafeEqual(a, b);
+}
+
 export function getRazorpayConfig(): {
   keyId: string;
   keySecret: string;
@@ -57,7 +68,9 @@ export async function createRazorpayOrder(input: {
 
   if (!res.ok) {
     const text = await res.text();
-    throw new Error(`Razorpay create order failed: ${res.status} ${text}`);
+    const err = new Error(`Razorpay create order failed: ${res.status} ${text}`);
+    (err as Error & { statusCode?: number }).statusCode = 502;
+    throw err;
   }
 
   const data = (await res.json()) as {
@@ -83,9 +96,12 @@ export function verifyRazorpaySignature(input: {
     .createHmac('sha256', keySecret)
     .update(`${input.razorpayOrderId}|${input.paymentId}`)
     .digest('hex');
-  try {
-    return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(input.signature));
-  } catch {
-    return false;
-  }
+  return timingSafeEqualStr(expected, input.signature);
+}
+
+/** Razorpay webhook HMAC of the raw JSON body. */
+export function verifyWebhookSignature(rawBody: string, signature: string): boolean {
+  if (!isWebhookConfigured() || !signature) return false;
+  const expected = crypto.createHmac('sha256', env.RAZORPAY_WEBHOOK_SECRET!).update(rawBody).digest('hex');
+  return timingSafeEqualStr(expected, signature);
 }

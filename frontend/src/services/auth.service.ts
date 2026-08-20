@@ -37,13 +37,17 @@ function issueLocalToken(user: AuthUser): string {
   return json;
 }
 
+function last10Digits(phone: string) {
+  return phone.replace(/\D/g, '').slice(-10);
+}
+
 function toE164(phone: string) {
-  const digits = phone.replace(/\D/g, '').slice(-10);
+  const digits = last10Digits(phone);
   return `+91${digits}`;
 }
 
 function normalizePhone(phone: string) {
-  const digits = phone.replace(/\D/g, '').slice(-10);
+  const digits = last10Digits(phone);
   return `+91 ${digits.slice(0, 5)} ${digits.slice(5)}`;
 }
 
@@ -137,7 +141,7 @@ export const authService = {
       throw new Error('Invalid OTP. Use 123456 in demo mode.');
     }
     const user: AuthUser = {
-      id: `demo-${input.phone.replace(/\D/g, '')}`,
+      id: `demo-${last10Digits(input.phone)}`,
       fullName: input.fullName?.trim() || 'BuildMart User',
       phone: normalizePhone(input.phone),
       role: input.role ?? 'homeowner',
