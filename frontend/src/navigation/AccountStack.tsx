@@ -9,13 +9,14 @@ import { SettingsScreen } from '../screens/account/SettingsScreen';
 import { SupportScreen } from '../screens/account/SupportScreen';
 import { ProductDetailScreen } from '../screens/product/ProductDetailScreen';
 import type { AccountStackParamList } from './types';
+import { withHomeBack } from './screenOptions';
 
 const Stack = createNativeStackNavigator<AccountStackParamList>();
 
 export function AccountStack() {
   return (
-    <Stack.Navigator>
-      <Stack.Screen name="Account" options={{ headerShown: false }}>
+    <Stack.Navigator screenOptions={({ navigation }) => withHomeBack(navigation, { dark: true })}>
+      <Stack.Screen name="Account" options={{ title: 'Account' }}>
         {({ navigation }) => (
           <ProfileScreen
             onOpenAddresses={() => navigation.navigate('Addresses')}
@@ -32,8 +33,6 @@ export function AccountStack() {
         name="ProfileEdit"
         options={{
           title: 'Edit profile',
-          headerShadowVisible: false,
-          headerStyle: { backgroundColor: '#E8F1F8' },
         }}
       >
         {({ navigation }) => <ProfileEditScreen onSaved={() => navigation.goBack()} />}
@@ -42,8 +41,6 @@ export function AccountStack() {
         name="Addresses"
         options={{
           title: 'Saved addresses',
-          headerShadowVisible: false,
-          headerStyle: { backgroundColor: '#E8F1F8' },
         }}
       >
         {({ navigation }) => (
@@ -57,8 +54,6 @@ export function AccountStack() {
         name="AddressEdit"
         options={{
           title: 'Edit address',
-          headerShadowVisible: false,
-          headerStyle: { backgroundColor: '#E8F1F8' },
         }}
       >
         {({ route, navigation }) => (
@@ -72,8 +67,6 @@ export function AccountStack() {
         name="Wishlist"
         options={{
           title: 'Wishlist',
-          headerShadowVisible: false,
-          headerStyle: { backgroundColor: '#E8F1F8' },
         }}
       >
         {({ navigation }) => (
@@ -87,8 +80,6 @@ export function AccountStack() {
         name="ProductDetail"
         options={{
           title: 'Product',
-          headerShadowVisible: false,
-          headerStyle: { backgroundColor: '#E8F1F8' },
         }}
       >
         {({ route, navigation }) => (
@@ -104,16 +95,12 @@ export function AccountStack() {
         component={SettingsScreen}
         options={{
           title: 'Settings',
-          headerShadowVisible: false,
-          headerStyle: { backgroundColor: '#E8F1F8' },
         }}
       />
       <Stack.Screen
         name="Support"
         options={{
           title: 'Help & support',
-          headerShadowVisible: false,
-          headerStyle: { backgroundColor: '#E8F1F8' },
         }}
       >
         {() => <SupportScreen mode="support" />}
@@ -122,8 +109,6 @@ export function AccountStack() {
         name="BulkQuote"
         options={{
           title: 'Bulk quote',
-          headerShadowVisible: false,
-          headerStyle: { backgroundColor: '#E8F1F8' },
         }}
       >
         {() => <SupportScreen mode="bulk" />}

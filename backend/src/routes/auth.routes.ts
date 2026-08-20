@@ -26,7 +26,7 @@ const DEMO_OTP = '123456';
  */
 authRouter.post('/otp/verify', async (req, res, next) => {
   try {
-    if (env.NODE_ENV === 'production' && isSupabaseAdminConfigured()) {
+    if (env.NODE_ENV === 'production') {
       throw new AppError(
         'USE_SUPABASE_AUTH',
         'Use Supabase phone OTP from the client in production.',

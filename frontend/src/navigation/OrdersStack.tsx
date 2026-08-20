@@ -3,18 +3,17 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { OrderListScreen } from '../screens/orders/OrderListScreen';
 import { OrderDetailScreen } from '../screens/orders/OrderDetailScreen';
 import type { OrdersStackParamList } from './types';
+import { withHomeBack } from './screenOptions';
 
 const Stack = createNativeStackNavigator<OrdersStackParamList>();
 
 export function OrdersStack() {
   return (
-    <Stack.Navigator>
+    <Stack.Navigator screenOptions={({ navigation }) => withHomeBack(navigation, { dark: true })}>
       <Stack.Screen
         name="Orders"
         options={{
           title: 'Orders',
-          headerShadowVisible: false,
-          headerStyle: { backgroundColor: '#E8F1F8' },
         }}
       >
         {({ navigation }) => (
@@ -28,8 +27,6 @@ export function OrdersStack() {
         name="OrderDetail"
         options={({ route }) => ({
           title: `Order #${route.params.orderId}`,
-          headerShadowVisible: false,
-          headerStyle: { backgroundColor: '#E8F1F8' },
         })}
       >
         {({ route, navigation }) => (

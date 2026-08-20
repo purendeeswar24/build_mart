@@ -8,6 +8,7 @@ import {
   StyleSheet,
   Text,
   TextInput,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -27,6 +28,8 @@ type Props = {
 
 export function AuthFlowScreen({ asModal, onClose, onDone }: Props) {
   const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
+  const hPad = width < 600 ? 16 : 36;
   const { sendOtp, verifyOtp, loginEmail } = useAuth();
 
   const [mode, setMode] = useState<Mode>(asModal ? 'login' : 'welcome');
@@ -57,7 +60,14 @@ export function AuthFlowScreen({ asModal, onClose, onDone }: Props) {
       style={[styles.root, { paddingTop: asModal ? 12 : insets.top + 12 }]}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      <ScrollView
+        contentContainerStyle={[
+          styles.content,
+          { paddingHorizontal: hPad, paddingBottom: 40 + (asModal ? 12 : insets.bottom) },
+        ]}
+        keyboardShouldPersistTaps="handled"
+      >
+        <View style={styles.form}>
         {asModal ? (
           <Pressable onPress={onClose} style={styles.closeRow}>
             <Text style={styles.closeText}>Close</Text>
@@ -92,7 +102,9 @@ export function AuthFlowScreen({ asModal, onClose, onDone }: Props) {
                   value={fullName}
                   onChangeText={setFullName}
                   placeholder="Rajesh Kumar"
-                  placeholderTextColor="#5C596A"
+                  placeholderTextColor={PLACEHOLDER}
+                  selectionColor={colors.primary}
+                  cursorColor={INPUT_TEXT}
                   style={styles.input}
                 />
               </>
@@ -107,7 +119,9 @@ export function AuthFlowScreen({ asModal, onClose, onDone }: Props) {
                 keyboardType="phone-pad"
                 maxLength={10}
                 placeholder="98765 43210"
-                placeholderTextColor="#5C596A"
+                placeholderTextColor={PLACEHOLDER}
+                selectionColor={colors.primary}
+                cursorColor={INPUT_TEXT}
                 style={styles.phoneInput}
               />
             </View>
@@ -185,7 +199,9 @@ export function AuthFlowScreen({ asModal, onClose, onDone }: Props) {
               keyboardType="number-pad"
               maxLength={6}
               placeholder="123456"
-              placeholderTextColor="#5C596A"
+              placeholderTextColor={PLACEHOLDER}
+              selectionColor={colors.primary}
+              cursorColor={INPUT_TEXT}
               style={styles.input}
             />
             <Text style={styles.hint}>Demo OTP: 123456</Text>
@@ -219,7 +235,9 @@ export function AuthFlowScreen({ asModal, onClose, onDone }: Props) {
               autoCapitalize="none"
               keyboardType="email-address"
               placeholder="you@example.com"
-              placeholderTextColor="#5C596A"
+              placeholderTextColor={PLACEHOLDER}
+              selectionColor={colors.primary}
+              cursorColor={INPUT_TEXT}
               style={styles.input}
             />
             <Text style={styles.label}>Password</Text>
@@ -228,7 +246,9 @@ export function AuthFlowScreen({ asModal, onClose, onDone }: Props) {
               onChangeText={setPassword}
               secureTextEntry
               placeholder="••••••••"
-              placeholderTextColor="#5C596A"
+              placeholderTextColor={PLACEHOLDER}
+              selectionColor={colors.primary}
+              cursorColor={INPUT_TEXT}
               style={styles.input}
             />
             <Pressable
@@ -256,10 +276,24 @@ export function AuthFlowScreen({ asModal, onClose, onDone }: Props) {
         ) : null}
 
         {error ? <Text style={styles.error}>{error}</Text> : null}
+        </View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
 }
+
+const PLACEHOLDER = 'rgba(255,255,255,0.55)';
+const INPUT_TEXT = '#FFFFFF';
+
+const inputWeb =
+  Platform.OS === 'web'
+    ? ({
+        outlineStyle: 'none' as const,
+        outlineWidth: 0,
+        color: INPUT_TEXT,
+        caretColor: INPUT_TEXT,
+      } as const)
+    : null;
 
 const styles = StyleSheet.create({
   root: {
@@ -267,8 +301,16 @@ const styles = StyleSheet.create({
     backgroundColor: colors.secondary,
   },
   content: {
-    paddingHorizontal: 24,
+    flexGrow: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingTop: 16,
     paddingBottom: 40,
+  },
+  form: {
+    width: '100%',
+    maxWidth: 340,
   },
   closeRow: {
     alignSelf: 'flex-end',
@@ -280,7 +322,6 @@ const styles = StyleSheet.create({
   },
   brand: {
     alignItems: 'center',
-    paddingTop: 28,
     marginBottom: 28,
   },
   logoBox: {
@@ -293,52 +334,62 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   brandTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: 20,
+    fontWeight: '700',
     color: colors.textInverse,
   },
   brandSub: {
     fontSize: 12,
-    color: '#8B889B',
-    marginTop: 4,
+    color: '#A8A5B5',
+    marginTop: 6,
     textAlign: 'center',
   },
   block: {
-    gap: 0,
+    width: '100%',
   },
   label: {
-    fontSize: 11,
-    color: '#8B889B',
-    marginBottom: 6,
-    marginTop: 4,
+    fontSize: 12,
+    color: '#C4C0CE',
+    marginBottom: 8,
+    marginTop: 2,
   },
   input: {
-    backgroundColor: colors.secondaryMuted,
+    backgroundColor: '#2A2A2A',
+    borderWidth: 1,
+    borderColor: '#3F3F46',
     borderRadius: 12,
     paddingHorizontal: 14,
-    paddingVertical: 12,
-    color: colors.textInverse,
-    fontSize: 13,
+    paddingVertical: 13,
+    color: INPUT_TEXT,
+    fontSize: 15,
     marginBottom: 14,
+    width: '100%',
+    ...inputWeb,
   },
   phoneRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.secondaryMuted,
+    backgroundColor: '#2A2A2A',
+    borderWidth: 1,
+    borderColor: '#3F3F46',
     borderRadius: 12,
     paddingHorizontal: 14,
-    marginBottom: 14,
-    gap: 8,
+    marginBottom: 16,
+    gap: 10,
+    width: '100%',
   },
   cc: {
-    color: colors.textInverse,
-    fontSize: 13,
+    color: INPUT_TEXT,
+    fontSize: 15,
+    fontWeight: '600',
   },
   phoneInput: {
     flex: 1,
-    paddingVertical: 12,
-    color: colors.textInverse,
-    fontSize: 13,
+    minWidth: 0,
+    paddingVertical: 13,
+    color: INPUT_TEXT,
+    fontSize: 15,
+    ...inputWeb,
   },
   roles: {
     flexDirection: 'row',
@@ -368,31 +419,34 @@ const styles = StyleSheet.create({
   primaryBtn: {
     backgroundColor: colors.primary,
     borderRadius: 12,
-    paddingVertical: 13,
+    paddingVertical: 14,
     alignItems: 'center',
+    width: '100%',
   },
   primaryBtnText: {
     color: colors.primaryInk,
-    fontSize: 13,
-    fontWeight: '600',
+    fontSize: 15,
+    fontWeight: '700',
   },
   secondaryBtn: {
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#3A3D4A',
+    borderWidth: 1,
+    borderColor: '#4A4A52',
     borderRadius: 12,
-    paddingVertical: 12,
+    paddingVertical: 13,
     alignItems: 'center',
-    marginTop: 12,
+    marginTop: 4,
+    width: '100%',
   },
   secondaryBtnText: {
-    color: '#C9C6D4',
-    fontSize: 13,
+    color: '#F2F0F7',
+    fontSize: 14,
+    fontWeight: '600',
   },
   orRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    marginVertical: 20,
+    marginVertical: 18,
   },
   orLine: {
     flex: 1,
@@ -400,23 +454,24 @@ const styles = StyleSheet.create({
     backgroundColor: '#3A3D4A',
   },
   orText: {
-    fontSize: 10,
-    color: '#5C596A',
+    fontSize: 11,
+    color: '#A8A5B5',
   },
   switchRow: {
-    marginTop: 24,
+    marginTop: 22,
     alignItems: 'center',
   },
   switchMuted: {
-    fontSize: 11,
-    color: '#5C596A',
+    fontSize: 13,
+    color: '#A8A5B5',
   },
   switchAccent: {
     color: colors.primary,
+    fontWeight: '700',
   },
   hint: {
     ...typography.micro,
-    color: '#8B889B',
+    color: '#A8A5B5',
     marginBottom: 12,
   },
   error: {

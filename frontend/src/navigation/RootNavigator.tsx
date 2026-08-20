@@ -1,12 +1,7 @@
 import React, { useRef } from 'react';
-import {
-  NavigationContainer,
-  DefaultTheme,
-  type NavigationState,
-  type PartialState,
-} from '@react-navigation/native';
+import { NavigationContainer, DefaultTheme, type NavigationState, type PartialState } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { ActivityIndicator, View } from 'react-native';
+import { View } from 'react-native';
 import { colors } from '../theme';
 import { MainTabs } from './MainTabs';
 import { AuthFlowScreen } from '../screens/auth/AuthFlowScreen';
@@ -44,26 +39,11 @@ function activeRouteName(state: NavigationState | PartialState<NavigationState> 
 }
 
 export function RootNavigator() {
-  const { isLoading, isAuthenticated } = useAuth();
+  const { isAuthenticated } = useAuth();
   const routeNameRef = useRef<string | undefined>(undefined);
 
-  if (isLoading) {
-    return (
-      <View
-        style={{
-          flex: 1,
-          alignItems: 'center',
-          justifyContent: 'center',
-          backgroundColor: colors.secondary,
-        }}
-      >
-        <ActivityIndicator color={colors.primary} size="large" />
-      </View>
-    );
-  }
-
   return (
-    <View style={{ flex: 1 }}>
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
       <OfflineBanner />
       <NavigationContainer
         theme={navTheme}

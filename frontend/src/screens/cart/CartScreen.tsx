@@ -25,10 +25,12 @@ export function CartScreen({ onCheckout, onChangeAddress, onBrowse }: Props) {
     return (
       <View style={[styles.screen, styles.center]}>
         <EmptyState
+          tone="dark"
           icon={ShoppingCart}
           title="Your cart is empty"
           message="Add materials from Home or Categories to get started."
           actionLabel="Browse materials"
+          features={['Any quantity', '30-min delivery', 'No min. order']}
           onAction={onBrowse}
         />
       </View>
@@ -59,7 +61,7 @@ export function CartScreen({ onCheckout, onChangeAddress, onBrowse }: Props) {
               {deliveryStatus?.message ?? 'Select address for ETA'}
             </Text>
           </View>
-          <ChevronRight size={16} color={colors.textSecondary} />
+          <ChevronRight size={16} color="#C4C0CE" />
         </Pressable>
 
         <View style={styles.list}>
@@ -78,7 +80,7 @@ export function CartScreen({ onCheckout, onChangeAddress, onBrowse }: Props) {
                   <View style={styles.rowTop}>
                     <Text style={styles.itemTitle}>{product.title}</Text>
                     <Pressable onPress={() => removeItem(line.productId, line.variantLabel)}>
-                      <Trash2 size={14} color={colors.textMuted} />
+                      <Trash2 size={14} color="#C4C0CE" />
                     </Pressable>
                   </View>
                   <Text style={styles.itemSub}>{line.variantLabel}</Text>
@@ -158,40 +160,40 @@ export function CartScreen({ onCheckout, onChangeAddress, onBrowse }: Props) {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.background },
+  screen: { flex: 1, backgroundColor: colors.secondary },
   center: { justifyContent: 'center' },
   content: { padding: spacing.lg, paddingBottom: 120 },
-  title: { ...typography.subheading, color: colors.text, marginBottom: 8 },
+  title: { ...typography.subheading, color: colors.textInverse, marginBottom: 8 },
   address: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: colors.surfaceWarm,
+    backgroundColor: colors.secondaryMuted,
     borderRadius: radii.md,
     padding: 12,
     marginBottom: 8,
   },
   addressText: { flex: 1 },
-  addressTitle: { ...typography.caption, color: colors.text, fontWeight: '600' },
-  addressSub: { ...typography.micro, color: colors.textSecondary, marginTop: 1 },
+  addressTitle: { ...typography.caption, color: colors.textInverse, fontWeight: '600' },
+  addressSub: { ...typography.micro, color: '#C4C0CE', marginTop: 1 },
   list: { paddingVertical: 4 },
   row: {
     flexDirection: 'row',
     gap: 10,
     paddingVertical: 10,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.border,
+    borderBottomColor: '#3A3D4A',
   },
   thumb: {
     width: 52,
     height: 52,
     borderRadius: radii.md,
-    backgroundColor: colors.surfaceMuted,
+    backgroundColor: '#2A2A2A',
   },
   rowBody: { flex: 1 },
   rowTop: { flexDirection: 'row', justifyContent: 'space-between', gap: 8 },
-  itemTitle: { ...typography.caption, color: colors.text, flex: 1 },
-  itemSub: { ...typography.micro, color: colors.textSecondary, marginTop: 1 },
+  itemTitle: { ...typography.caption, color: colors.textInverse, flex: 1 },
+  itemSub: { ...typography.micro, color: '#C4C0CE', marginTop: 1 },
   rowFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -202,42 +204,42 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
+    borderColor: '#3A3D4A',
     borderRadius: radii.sm,
   },
   stepBtn: { paddingHorizontal: 10, paddingVertical: 4 },
-  stepText: { ...typography.caption, color: colors.text },
-  qty: { ...typography.caption, paddingHorizontal: 4, color: colors.text },
-  linePrice: { fontSize: 13, fontWeight: '700', color: colors.text },
+  stepText: { ...typography.caption, color: colors.textInverse },
+  qty: { ...typography.caption, paddingHorizontal: 4, color: colors.textInverse },
+  linePrice: { fontSize: 13, fontWeight: '700', color: colors.textInverse },
   summary: {
     marginTop: 12,
-    backgroundColor: colors.surface,
+    backgroundColor: colors.secondaryMuted,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
+    borderColor: '#3A3D4A',
     borderRadius: radii.md,
     padding: 12,
     gap: 6,
   },
   summaryRow: { flexDirection: 'row', justifyContent: 'space-between' },
-  summaryLabel: { ...typography.caption, color: colors.textSecondary },
-  freeHint: { ...typography.micro, color: colors.textMuted },
+  summaryLabel: { ...typography.caption, color: '#C4C0CE' },
+  freeHint: { ...typography.micro, color: '#A8A5B5' },
   totalRow: {
     paddingTop: 8,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.border,
+    borderTopColor: '#3A3D4A',
   },
-  total: { fontSize: 14, fontWeight: '700', color: colors.text },
+  total: { fontSize: 14, fontWeight: '700', color: colors.textInverse },
   footer: {
     position: 'absolute',
     left: 0,
     right: 0,
     bottom: 0,
     padding: spacing.lg,
-    backgroundColor: colors.background,
+    backgroundColor: colors.secondary,
   },
   blockMsg: {
     ...typography.micro,
-    color: colors.danger,
+    color: '#E57373',
     marginBottom: 8,
     textAlign: 'center',
   },

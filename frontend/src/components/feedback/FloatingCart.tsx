@@ -1,7 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 import { ShoppingCart } from 'lucide-react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useCart } from '../../hooks/useCart';
 import { useFeedback } from '../../hooks/useFeedback';
 import { colors, motion, radii, shadows } from '../../theme';
@@ -14,7 +13,6 @@ type Props = {
 export function FloatingCart({ onPress }: Props) {
   const { count, total } = useCart();
   const { cartBounceToken } = useFeedback();
-  const insets = useSafeAreaInsets();
   const scale = useRef(new Animated.Value(1)).current;
   const translateY = useRef(new Animated.Value(0)).current;
   const enter = useRef(new Animated.Value(0)).current;
@@ -27,6 +25,7 @@ export function FloatingCart({ onPress }: Props) {
       prevCount.current = 0;
       return;
     }
+    enter.setValue(1);
     if (prevCount.current === 0) {
       enter.setValue(0);
       Animated.spring(enter, {
@@ -87,7 +86,7 @@ export function FloatingCart({ onPress }: Props) {
   });
 
   return (
-    <View pointerEvents="box-none" style={[styles.wrap, { bottom: Math.max(insets.bottom, 8) }]}>
+    <View pointerEvents="box-none" style={styles.wrap}>
       <Animated.View
         style={{
           opacity: enter,
@@ -121,13 +120,11 @@ export function FloatingCart({ onPress }: Props) {
 
 const styles = StyleSheet.create({
   wrap: {
-    position: 'relative',
-    left: 0,
-    right: 0,
-    zIndex: 900,
     alignItems: 'center',
+    justifyContent: 'center',
     paddingHorizontal: 16,
-    marginBottom: 8,
+    paddingBottom: 8,
+    width: '100%',
   },
   btn: {
     flexDirection: 'row',

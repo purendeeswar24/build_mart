@@ -299,7 +299,7 @@ export function CheckoutScreen({ onConfirmed, onChangeAddress }: Props) {
           </Text>
           <ChevronDown
             size={16}
-            color={colors.textSecondary}
+            color="#C4C0CE"
             style={{ transform: [{ rotate: itemsOpen ? '180deg' : '0deg' }] }}
           />
         </Pressable>
@@ -320,20 +320,20 @@ export function CheckoutScreen({ onConfirmed, onChangeAddress }: Props) {
         <PayRow
           active={method === 'upi'}
           label="UPI (Razorpay)"
-          icon={<QrCode size={16} color={method === 'upi' ? colors.textInverse : '#4A4636'} />}
+          icon={<QrCode size={16} color={method === 'upi' ? colors.textInverse : '#C4C0CE'} />}
           onPress={() => setMethod('upi')}
           dark
         />
         <PayRow
           active={method === 'card'}
           label="Card / Netbanking (Razorpay)"
-          icon={<CreditCard size={16} color="#4A4636" />}
+          icon={<CreditCard size={16} color="#C4C0CE" />}
           onPress={() => setMethod('card')}
         />
         <PayRow
           active={method === 'cod'}
           label={codOk ? 'Cash on delivery' : 'COD (not available here)'}
-          icon={<Banknote size={16} color="#4A4636" />}
+          icon={<Banknote size={16} color="#C4C0CE" />}
           onPress={() => {
             if (!codOk) {
               Alert.alert('COD unavailable', 'Try a COD-eligible pincode (e.g. 500032).');
@@ -417,29 +417,29 @@ function PayRow({
         <Circle size={16} color={colors.textMuted} />
       )}
       {icon}
-      <Text style={[styles.payLabel, active && dark && { color: colors.textInverse }]}>{label}</Text>
+      <Text style={[styles.payLabel, active && { color: colors.textInverse }]}>{label}</Text>
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.background },
+  screen: { flex: 1, backgroundColor: colors.secondary },
   content: { padding: spacing.lg, paddingBottom: 100 },
-  section: { fontSize: 10, color: colors.textSecondary, marginBottom: 6, marginTop: 8 },
+  section: { fontSize: 10, color: '#C4C0CE', marginBottom: 6, marginTop: 8 },
   card: {
-    backgroundColor: colors.surface,
+    backgroundColor: colors.secondaryMuted,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
+    borderColor: '#3A3D4A',
     borderRadius: 12,
     padding: 12,
   },
   addrRow: { flexDirection: 'row', gap: 8, alignItems: 'flex-start' },
-  addrTitle: { fontSize: 11, fontWeight: '600', color: colors.text },
-  addrSub: { fontSize: 9, color: colors.textSecondary, marginTop: 1 },
+  addrTitle: { fontSize: 11, fontWeight: '600', color: colors.textInverse },
+  addrSub: { fontSize: 9, color: '#C4C0CE', marginTop: 1 },
   eta: { fontSize: 10, marginTop: 4, fontWeight: '600' },
   ok: { color: colors.success },
-  bad: { color: colors.danger },
-  change: { fontSize: 10, color: colors.primaryDark },
+  bad: { color: '#E57373' },
+  change: { fontSize: 10, color: colors.primary },
   itemsToggle: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -448,14 +448,14 @@ const styles = StyleSheet.create({
     marginBottom: 4,
     paddingVertical: 8,
   },
-  itemsToggleText: { fontSize: 12, fontWeight: '600', color: colors.text },
+  itemsToggleText: { fontSize: 12, fontWeight: '600', color: colors.textInverse },
   itemRow: {
     paddingVertical: 6,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.border,
+    borderBottomColor: '#3A3D4A',
   },
-  itemTitle: { fontSize: 12, color: colors.text },
-  itemMeta: { fontSize: 10, color: colors.textSecondary, marginTop: 2 },
+  itemTitle: { fontSize: 12, color: colors.textInverse },
+  itemMeta: { fontSize: 10, color: '#C4C0CE', marginTop: 2 },
   payRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -464,14 +464,14 @@ const styles = StyleSheet.create({
     padding: 12,
     marginBottom: 7,
   },
-  payDark: { backgroundColor: colors.secondary },
+  payDark: { backgroundColor: '#2A2A2A' },
   payLight: {
-    backgroundColor: colors.surface,
+    backgroundColor: colors.secondaryMuted,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
+    borderColor: '#3A3D4A',
   },
   payActiveLight: { borderColor: colors.primary },
-  payLabel: { fontSize: 12, color: '#4A4636' },
+  payLabel: { fontSize: 12, color: '#C4C0CE' },
   retry: {
     marginTop: 4,
     marginBottom: 8,
@@ -482,22 +482,29 @@ const styles = StyleSheet.create({
   retryText: { fontSize: 12, fontWeight: '600', color: colors.primaryInk, textAlign: 'center' },
   summary: {
     marginTop: 14,
-    backgroundColor: colors.surface,
+    backgroundColor: colors.secondaryMuted,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
+    borderColor: '#3A3D4A',
     borderRadius: 12,
     padding: 12,
     gap: 6,
   },
   sumRow: { flexDirection: 'row', justifyContent: 'space-between' },
-  sumLabel: { fontSize: 11, color: colors.textSecondary },
+  sumLabel: { fontSize: 11, color: '#C4C0CE' },
   totalRow: {
     paddingTop: 7,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.border,
+    borderTopColor: '#3A3D4A',
   },
-  total: { fontSize: 13, fontWeight: '600', color: colors.text },
-  footer: { position: 'absolute', left: 0, right: 0, bottom: 0, padding: spacing.lg },
+  total: { fontSize: 13, fontWeight: '600', color: colors.textInverse },
+  footer: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    padding: spacing.lg,
+    backgroundColor: colors.secondary,
+  },
   place: {
     backgroundColor: colors.primary,
     borderRadius: 12,

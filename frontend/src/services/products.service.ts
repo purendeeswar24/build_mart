@@ -312,10 +312,53 @@ async function trySupabaseProductCards(): Promise<ProductCardModel[] | null> {
     .filter(Boolean) as ProductCardModel[];
 }
 
+type HomeFeed = {
+  banners: ImageSourcePropType[];
+  saleBanner: ImageSourcePropType;
+  categories: CatalogCategory[];
+  trending: ProductCardModel[];
+  bestSellers: ProductCardModel[];
+  featured: ProductCardModel[];
+};
+
+function buildLocalHomeFeed(): HomeFeed {
+  const categories = SEED_CATEGORIES.filter((c) => !c.parent_id).sort(
+    (a, b) => a.sort_order - b.sort_order,
+  ).slice(0, 8);
+  const cards = SEED_PRODUCTS.map(toCard).filter(Boolean) as ProductCardModel[];
+  const meta = Object.fromEntries(SEED_PRODUCTS.map((p) => [p.id, p]));
+  return {
+    banners: SEED_BANNERS,
+    saleBanner: SEED_SALE_BANNER,
+    categories,
+    trending: cards.filter((c) => meta[c.id]?.trending).slice(0, 16),
+    bestSellers: cards.filter((c) => meta[c.id]?.bestseller).slice(0, 8),
+    featured: cards.filter((c) => meta[c.id]?.featured).slice(0, 9),
+  };
+}
+
+let localFeedCache: HomeFeed | null = null;
+
+function localHomeFeed(): HomeFeed {
+  localFeedCache ??= buildLocalHomeFeed();
+  return localFeedCache;
+}
+
+async function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T | null> {
+  return Promise.race([
+    promise.catch(() => null),
+    new Promise<null>((resolve) => setTimeout(() => resolve(null), ms)),
+  ]);
+}
+
 export const productsService = {
+  getLocalHomeFeed: localHomeFeed,
+
   async getTopCategories(): Promise<CatalogCategory[]> {
-    const remote = await trySupabaseCategories();
-    if (remote) return remote;
+    if (isSupabaseConfigured) {
+      const remote = await withTimeout(trySupabaseCategories(), 600);
+      if (remote) return remote;
+    }
     return SEED_CATEGORIES.filter((c) => !c.parent_id).sort((a, b) => a.sort_order - b.sort_order);
   },
 
@@ -351,34 +394,23 @@ export const productsService = {
     return SEED_CATEGORIES.find((c) => c.id === id || c.slug === id);
   },
 
-  async getHomeFeed(): Promise<{
-    banners: ImageSourcePropType[];
-    saleBanner: ImageSourcePropType;
-    categories: CatalogCategory[];
-    trending: ProductCardModel[];
-    bestSellers: ProductCardModel[];
-    featured: ProductCardModel[];
-  }> {
-    const categories = (await this.getTopCategories()).slice(0, 8);
-    const remoteCards = await trySupabaseProductCards();
-    const cards =
-      remoteCards ??
-      ((SEED_PRODUCTS.map(toCard).filter(Boolean) as ProductCardModel[]));
-    const meta = Object.fromEntries(SEED_PRODUCTS.map((p) => [p.id, p]));
-
+  async getHomeFeed(): Promise<HomeFeed> {
+    const local = localHomeFeed();
+    if (!isSupabaseConfigured) return local;
+    const remote = await withTimeout(
+      Promise.all([trySupabaseCategories(), trySupabaseProductCards()]),
+      600,
+    );
+    if (!remote) return local;
+    const [cats, cards] = remote;
+    if (!cards?.length) return local;
     return {
       banners: SEED_BANNERS,
       saleBanner: SEED_SALE_BANNER,
-      categories,
-      trending: remoteCards
-        ? cards.slice(0, 8)
-        : cards.filter((c) => meta[c.id]?.trending).slice(0, 8),
-      bestSellers: remoteCards
-        ? cards.slice(0, 8)
-        : cards.filter((c) => meta[c.id]?.bestseller).slice(0, 8),
-      featured: remoteCards
-        ? cards.slice(0, 8)
-        : cards.filter((c) => meta[c.id]?.featured).slice(0, 8),
+      categories: (cats ?? local.categories).slice(0, 8),
+      trending: cards.slice(0, 16),
+      bestSellers: cards.slice(0, 8),
+      featured: cards.slice(0, 9),
     };
   },
 

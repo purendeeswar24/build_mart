@@ -1,12 +1,12 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
-  Dimensions,
   FlatList,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import { PackageSearch, SlidersHorizontal, X } from 'lucide-react-native';
@@ -31,12 +31,10 @@ import {
 } from '../../services/products.service';
 import { colors, radii, spacing, typography } from '../../theme';
 
-const SCREEN_W = Dimensions.get('window').width;
-const SIDEBAR_W = 88;
-const GRID_PAD = 14;
-const GRID_GAP = 14;
-const CARD_W = (SCREEN_W - SIDEBAR_W - GRID_PAD * 2 - GRID_GAP) / 2;
-const PAGE_SIZE = 8;
+const SIDEBAR_W = 96;
+const GRID_PAD = 12;
+const GRID_GAP = 12;
+const PAGE_SIZE = 16;
 
 type Props = {
   title: string;
@@ -63,7 +61,12 @@ export function CategoryDetailScreen({
   const [facets, setFacets] = useState<FilterFacets | null>(null);
   const [filters, setFilters] = useState<ActiveFilters>(EMPTY_FILTERS);
   const [sheetOpen, setSheetOpen] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [catThumb, setCatThumb] = useState<CatalogCategory | undefined>();
+  const { width: windowWidth } = useWindowDimensions();
+  const sideW = windowWidth < 400 ? 72 : 96;
+  const [paneW, setPaneW] = useState(() => Math.max(windowWidth - sideW, 220));
+  const cols = windowWidth < 420 ? 2 : paneW >= 560 ? 3 : 2;
+  const cardW = Math.max(130, (paneW - GRID_PAD * 2 - GRID_GAP * (cols - 1)) / cols);
 
   const effectiveCategoryId = activeSubId ?? categoryId;
 
@@ -74,16 +77,18 @@ export function CategoryDetailScreen({
     try {
       const queryCat = activeSubId ?? categoryId;
       const query = filtersToQuery(filters, { categoryId: queryCat });
-      const [paged, children, nextFacets] = await Promise.all([
+      const [paged, children, nextFacets, category] = await Promise.all([
         productsService.queryProductsPaged({ ...query, limit: PAGE_SIZE, offset: 0 }),
         productsService.getSubcategories(categoryId),
         productsService.getFilterFacets(queryCat),
+        productsService.getCategoryById(categoryId),
       ]);
       setProducts(paged.items);
       setTotal(paged.total);
       setHasMore(paged.hasMore);
       setSubs(children);
       setFacets(nextFacets);
+      setCatThumb(category);
     } catch {
       setError('Could not load products. Check your connection and retry.');
     } finally {
@@ -159,15 +164,23 @@ export function CategoryDetailScreen({
 
       <View style={styles.body}>
         {/* BuildZap-style category rail — compact, leaves room for products */}
-        <ScrollView style={styles.sidebar} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          style={[styles.sidebar, { width: sideW }]}
+          contentContainerStyle={styles.sidebarContent}
+          showsVerticalScrollIndicator={false}
+        >
           <Pressable
-            style={[styles.sideItem, !activeSubId && styles.sideItemOn]}
+            style={[styles.sideItem, { width: sideW - 10 }, !activeSubId && styles.sideItemOn]}
             onPress={() => selectSub(null)}
           >
             <View style={[styles.sideIcon, !activeSubId && styles.sideIconOn]}>
-              <Text style={styles.sideAll}>All</Text>
+              {catThumb?.image ? (
+                <SafeImage source={catThumb.image} style={styles.sideImg} contentFit="cover" />
+              ) : (
+                <Text style={styles.sideAll}>All</Text>
+              )}
             </View>
-            <Text style={[styles.sideLabel, !activeSubId && styles.sideLabelOn]} numberOfLines={2}>
+            <Text style={[styles.sideLabel, !activeSubId && styles.sideLabelOn]} numberOfLines={1}>
               All
             </Text>
           </Pressable>
@@ -176,7 +189,7 @@ export function CategoryDetailScreen({
             return (
               <Pressable
                 key={s.id}
-                style={[styles.sideItem, on && styles.sideItemOn]}
+                style={[styles.sideItem, { width: sideW - 10 }, on && styles.sideItemOn]}
                 onPress={() => selectSub(s.id)}
               >
                 <View style={[styles.sideIcon, on && styles.sideIconOn]}>
@@ -194,7 +207,13 @@ export function CategoryDetailScreen({
           })}
         </ScrollView>
 
-        <View style={styles.gridPane}>
+        <View
+          style={styles.gridPane}
+          onLayout={(e) => {
+            const w = e.nativeEvent.layout.width;
+            if (w > 0 && Math.abs(w - paneW) > 2) setPaneW(w);
+          }}
+        >
           <Text style={styles.results}>{total} products</Text>
           {error ? (
             <EmptyState
@@ -205,15 +224,16 @@ export function CategoryDetailScreen({
               onAction={() => void reload()}
             />
           ) : loading ? (
-            <ProductGridSkeleton count={4} cardWidth={CARD_W} />
+            <ProductGridSkeleton count={cols * 2} cardWidth={cardW} />
           ) : (
             <FlatList
+              key={`grid-${cols}`}
               data={products}
               keyExtractor={(item) => item.id}
-              numColumns={2}
+              numColumns={cols}
               columnWrapperStyle={styles.gridRow}
               contentContainerStyle={styles.grid}
-              initialNumToRender={6}
+              initialNumToRender={9}
               windowSize={7}
               onEndReached={() => void loadMore()}
               onEndReachedThreshold={0.4}
@@ -236,7 +256,7 @@ export function CategoryDetailScreen({
               renderItem={({ item }) => (
                 <ProductCard
                   product={item}
-                  width={CARD_W}
+                  width={cardW}
                   onPress={() => onProductPress?.(item.id)}
                   onAddPress={() => onProductPress?.(item.id)}
                   onOpenCart={onOpenCart}
@@ -298,47 +318,54 @@ const styles = StyleSheet.create({
   body: { flex: 1, flexDirection: 'row' },
   sidebar: {
     width: SIDEBAR_W,
+    flexGrow: 0,
+    flexShrink: 0,
     backgroundColor: colors.surface,
     borderRightWidth: StyleSheet.hairlineWidth,
     borderRightColor: colors.border,
   },
+  sidebarContent: {
+    flexGrow: 0,
+    paddingVertical: 8,
+    alignItems: 'center',
+  },
   sideItem: {
+    width: SIDEBAR_W - 10,
     alignItems: 'center',
     paddingVertical: 10,
-    paddingHorizontal: 6,
-    gap: 4,
-    borderLeftWidth: 3,
-    borderLeftColor: 'transparent',
+    paddingHorizontal: 4,
+    gap: 6,
+    borderRadius: radii.md,
   },
   sideItemOn: {
-    backgroundColor: colors.surfaceWarm,
-    borderLeftColor: colors.primary,
+    backgroundColor: colors.primaryMuted,
   },
   sideIcon: {
-    width: 52,
-    height: 52,
-    borderRadius: radii.sm,
+    width: 64,
+    height: 64,
+    borderRadius: radii.md,
     backgroundColor: colors.surfaceMuted,
     overflow: 'hidden',
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: colors.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
   sideIconOn: {
     borderColor: colors.primary,
+    backgroundColor: colors.surface,
   },
   sideImg: { width: '100%', height: '100%' },
-  sideAll: { fontSize: 11, fontWeight: '800', color: colors.text },
+  sideAll: { fontSize: 12, fontWeight: '800', color: colors.text },
   sideLabel: {
-    fontSize: 9,
+    fontSize: 11,
     textAlign: 'center',
     color: colors.textSecondary,
-    fontWeight: '600',
-    lineHeight: 11,
+    fontWeight: '700',
+    lineHeight: 13,
   },
   sideLabelOn: { color: colors.text },
-  gridPane: { flex: 1, paddingTop: 8 },
+  gridPane: { flex: 1, minWidth: 0, paddingTop: 8 },
   results: {
     ...typography.micro,
     color: colors.textSecondary,
@@ -346,5 +373,5 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   grid: { paddingHorizontal: GRID_PAD, paddingBottom: spacing.xxl },
-  gridRow: { justifyContent: 'space-between', marginBottom: GRID_GAP },
+  gridRow: { gap: GRID_GAP, marginBottom: GRID_GAP },
 });

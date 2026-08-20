@@ -5,6 +5,8 @@ import { CategoryDetailScreen } from '../screens/category/CategoryDetailScreen';
 import { ProductDetailScreen } from '../screens/product/ProductDetailScreen';
 import { SearchScreen } from '../screens/search/SearchScreen';
 import type { CategoriesStackParamList } from './types';
+import { withHomeBack } from './screenOptions';
+import { goToHome } from './goToHome';
 
 const Stack = createNativeStackNavigator<CategoriesStackParamList>();
 
@@ -15,8 +17,15 @@ type Props = {
 
 export function CategoriesStack({ onOpenCart, onOpenAccount }: Props) {
   return (
-    <Stack.Navigator>
-      <Stack.Screen name="Categories" options={{ headerShown: false }}>
+    <Stack.Navigator
+      screenOptions={({ navigation }) => ({
+        ...withHomeBack(navigation),
+      })}
+    >
+      <Stack.Screen
+        name="Categories"
+        options={{ headerShown: false, contentStyle: { backgroundColor: '#0A0A0A' } }}
+      >
         {({ navigation }) => (
           <CategoryListScreen
             onCategoryPress={(categoryId, title) =>
@@ -25,6 +34,7 @@ export function CategoriesStack({ onOpenCart, onOpenAccount }: Props) {
             onSearchPress={() => navigation.navigate('Search')}
             onCartPress={onOpenCart}
             onProfilePress={onOpenAccount}
+            onHomePress={() => goToHome(navigation)}
           />
         )}
       </Stack.Screen>
@@ -32,8 +42,6 @@ export function CategoriesStack({ onOpenCart, onOpenAccount }: Props) {
         name="CategoryDetail"
         options={({ route }) => ({
           title: route.params.title,
-          headerShadowVisible: false,
-          headerStyle: { backgroundColor: '#E8F1F8' },
         })}
       >
         {({ route, navigation }) => (
@@ -49,8 +57,6 @@ export function CategoriesStack({ onOpenCart, onOpenAccount }: Props) {
         name="ProductDetail"
         options={{
           title: 'Product',
-          headerShadowVisible: false,
-          headerStyle: { backgroundColor: '#E8F1F8' },
         }}
       >
         {({ route, navigation }) => (
@@ -64,7 +70,7 @@ export function CategoriesStack({ onOpenCart, onOpenAccount }: Props) {
       <Stack.Screen
         name="Search"
         component={SearchScreen}
-        options={{ title: 'Search', headerShadowVisible: false }}
+        options={{ title: 'Search' }}
       />
     </Stack.Navigator>
   );
