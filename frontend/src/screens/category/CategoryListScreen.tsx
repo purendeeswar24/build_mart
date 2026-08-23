@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { AppHeader } from '../../components/layout/AppHeader';
 import { ProductGridSkeleton } from '../../components/layout/Skeleton';
-import { CategoryTile, CATEGORY_TILE_SIZE } from '../../components/product/CategoryTile';
+import { CategoryTile, categoryTileSizeFor } from '../../components/product/CategoryTile';
+import { useLayout } from '../../hooks/useLayout';
 import { FadeIn } from '../../components/motion/FadeIn';
 import { productsService, type CatalogCategory } from '../../services/products.service';
 import { useCart } from '../../hooks/useCart';
@@ -24,6 +25,8 @@ export function CategoryListScreen({
   onProfilePress,
   onCapacityPress,
 }: Props) {
+  const { width, gutter, categoryCols } = useLayout();
+  const tileSize = categoryTileSizeFor(width, gutter, categoryCols);
   const { count } = useCart();
   const { selected, deliveryStatus } = useAddress();
   const [categories, setCategories] = useState<CatalogCategory[]>([]);
@@ -55,14 +58,15 @@ export function CategoryListScreen({
       />
       {loading ? (
         <View style={{ padding: 16 }}>
-          <ProductGridSkeleton count={8} cardWidth={CATEGORY_TILE_SIZE} />
+          <ProductGridSkeleton count={8} cardWidth={tileSize} />
         </View>
       ) : (
         <FlatList
           data={categories}
           keyExtractor={(item) => item.id}
-          numColumns={4}
-          contentContainerStyle={styles.list}
+          key={`cats-${categoryCols}`}
+          numColumns={categoryCols}
+          contentContainerStyle={[styles.list, { paddingHorizontal: gutter }]}
           columnWrapperStyle={styles.row}
           ListHeaderComponent={
             <FadeIn>
@@ -82,7 +86,7 @@ export function CategoryListScreen({
             <CategoryTile
               category={item}
               compact
-              size={CATEGORY_TILE_SIZE}
+              size={tileSize}
               onPress={() => onCategoryPress?.(item.id, item.name)}
             />
           )}

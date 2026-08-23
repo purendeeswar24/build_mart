@@ -4,6 +4,7 @@ import { AppError } from '../middleware/errorHandler.middleware';
 import { verifyRazorpaySignature } from '../config/razorpay';
 import {
   confirmPaidOrder,
+  getOrder,
   listOrders,
   placeOrder,
 } from '../services/orders.service';
@@ -17,6 +18,8 @@ const placeSchema = z.object({
   pincode: z.string().optional(),
   city: z.string().optional(),
   etaMinutes: z.number().optional(),
+  latitude: z.number().optional(),
+  longitude: z.number().optional(),
   paymentMethod: z.enum(['upi', 'card', 'cod']),
   subtotal: z.number().nonnegative(),
   deliveryFee: z.number().nonnegative(),
@@ -45,6 +48,16 @@ ordersRouter.get('/', async (req, res, next) => {
   }
 });
 
+ordersRouter.get('/:id', async (req, res, next) => {
+  try {
+    const order = await getOrder(req.auth!.sub, req.params.id);
+    if (!order) throw new AppError('NOT_FOUND', 'Order not found.', 404);
+    res.json({ order });
+  } catch (err) {
+    next(err);
+  }
+});
+
 ordersRouter.post('/', async (req, res, next) => {
   try {
     const body = placeSchema.parse(req.body);
@@ -67,15 +80,16 @@ ordersRouter.post('/:id/confirm-payment', async (req, res, next) => {
 
     if (!req.params.id) throw new AppError('BAD_REQUEST', 'Missing order id', 400);
 
-    if (body.razorpayOrderId && body.signature) {
-      const ok = verifyRazorpaySignature({
-        razorpayOrderId: body.razorpayOrderId,
-        paymentId: body.paymentId,
-        signature: body.signature,
-      });
-      if (!ok) {
-        throw new AppError('PAYMENT_INVALID', 'Payment signature verification failed.', 400);
-      }
+    if (!body.razorpayOrderId || !body.signature) {
+      throw new AppError('PAYMENT_INVALID', 'Payment confirmation requires a verified signature.', 400);
+    }
+    const ok = verifyRazorpaySignature({
+      razorpayOrderId: body.razorpayOrderId,
+      paymentId: body.paymentId,
+      signature: body.signature,
+    });
+    if (!ok) {
+      throw new AppError('PAYMENT_INVALID', 'Payment signature verification failed.', 400);
     }
 
     const order = await confirmPaidOrder(

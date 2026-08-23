@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
   Animated,
-  Dimensions,
   NativeScrollEvent,
   NativeSyntheticEvent,
   Pressable,
@@ -11,7 +10,7 @@ import {
   View,
 } from 'react-native';
 import { Image } from 'expo-image';
-import { ClipboardList, Droplets, Package, Truck, Zap } from 'lucide-react-native';
+import { ClipboardList, Droplets, Hammer, Package, Truck, Zap } from 'lucide-react-native';
 import { AppHeader } from '../../components/layout/AppHeader';
 import { HomeSkeleton } from '../../components/layout/Skeleton';
 import { FadeIn } from '../../components/motion/FadeIn';
@@ -19,16 +18,16 @@ import { ProductCard } from '../../components/product/ProductCard';
 import { CategoryTile } from '../../components/product/CategoryTile';
 import { SectionHeader } from '../../components/layout/SectionHeader';
 import { productsService, type CatalogCategory, type ProductCardModel } from '../../services/products.service';
+import { hireCategoryLabel, hireService, hireTimeLeft, type HireJobCard } from '../../services/hire.service';
 import { useCart } from '../../hooks/useCart';
 import { useAddress } from '../../hooks/useAddress';
+import { useLayout } from '../../hooks/useLayout';
 import { colors, radii, shadows, typography } from '../../theme';
 import type { ImageSourcePropType } from 'react-native';
 
-const SCREEN_W = Dimensions.get('window').width;
 const H_PAD = 20;
-const CARD_W = 168;
-const CARD_GAP = 16;
-const BANNER_W = SCREEN_W - H_PAD * 2;
+const CARD_W = 156;
+const CARD_GAP = 14;
 
 type Props = {
   onSearchPress?: () => void;
@@ -39,6 +38,8 @@ type Props = {
   onCapacityPress?: () => void;
   onCategoriesTab?: () => void;
   onLocationPress?: () => void;
+  onHirePress?: () => void;
+  onHireJobPress?: (jobId: string) => void;
 };
 
 function pad2(n: number) {
@@ -128,7 +129,12 @@ export function HomeScreen({
   onCapacityPress,
   onCategoriesTab,
   onLocationPress,
+  onHirePress,
+  onHireJobPress,
 }: Props) {
+  const { width, gutter, featuredCols, cardGap } = useLayout();
+  const bannerW = Math.max(width - gutter * 2, 280);
+  const featuredW = (width - gutter * 2 - cardGap * (featuredCols - 1)) / featuredCols;
   const [bannerIndex, setBannerIndex] = useState(0);
   const bannerRef = useRef<ScrollView>(null);
   const { count } = useCart();
@@ -140,6 +146,7 @@ export function HomeScreen({
   const [trending, setTrending] = useState<ProductCardModel[]>([]);
   const [bestSellers, setBestSellers] = useState<ProductCardModel[]>([]);
   const [featured, setFeatured] = useState<ProductCardModel[]>([]);
+  const [endingSoon, setEndingSoon] = useState<HireJobCard[]>([]);
 
   useEffect(() => {
     let alive = true;
@@ -153,6 +160,12 @@ export function HomeScreen({
       setTrending(feed.trending);
       setBestSellers(feed.bestSellers);
       setFeatured(feed.featured);
+      try {
+        const soon = await hireService.endingSoon();
+        if (alive) setEndingSoon(soon.jobs ?? []);
+      } catch {
+        if (alive) setEndingSoon([]);
+      }
       setLoading(false);
     })();
     return () => {
@@ -165,16 +178,16 @@ export function HomeScreen({
     const id = setInterval(() => {
       setBannerIndex((i) => {
         const next = (i + 1) % banners.length;
-        bannerRef.current?.scrollTo({ x: next * (BANNER_W + H_PAD), animated: true });
+        bannerRef.current?.scrollTo({ x: next * (bannerW + gutter), animated: true });
         return next;
       });
     }, 4200);
     return () => clearInterval(id);
-  }, [banners.length]);
+  }, [banners.length, bannerW, gutter]);
 
   const onBannerScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const x = e.nativeEvent.contentOffset.x;
-    setBannerIndex(Math.round(x / (BANNER_W + H_PAD)));
+    setBannerIndex(Math.round(x / (bannerW + gutter)));
   };
 
   const eta = deliveryStatus?.message?.includes('Delivery')
@@ -227,6 +240,52 @@ export function HomeScreen({
             </HeroWash>
           </FadeIn>
 
+          {endingSoon.length > 0 ? (
+            <FadeIn delay={40}>
+              <View style={styles.sectionHead}>
+                <Text style={styles.sectionTitle}>Completing soon</Text>
+                <Pressable onPress={onHirePress}>
+                  <Text style={styles.seeAll}>Open work</Text>
+                </Pressable>
+              </View>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.soonRow}
+              >
+                {endingSoon.map((job) => (
+                  <Pressable
+                    key={job.id}
+                    style={styles.soonCard}
+                    onPress={() => onHireJobPress?.(job.id) ?? onHirePress?.()}
+                  >
+                    <Text style={styles.soonBadge}>CLOSING</Text>
+                    <Text style={styles.soonTitle} numberOfLines={2}>
+                      {job.title}
+                    </Text>
+                    <Text style={styles.soonMeta}>
+                      {hireCategoryLabel(job.category)} · {hireTimeLeft(job.biddingEndsAt)}
+                    </Text>
+                  </Pressable>
+                ))}
+              </ScrollView>
+            </FadeIn>
+          ) : (
+            <FadeIn delay={40}>
+              <Pressable style={styles.hirePromo} onPress={onHirePress}>
+                <View style={styles.howIcon}>
+                  <Hammer size={18} color={colors.primaryInk} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.toolTitle}>Open work / bid</Text>
+                  <Text style={styles.toolSub}>
+                    Builders post work. Companies bid. After accept, talk only through BuildMart.
+                  </Text>
+                </View>
+              </Pressable>
+            </FadeIn>
+          )}
+
           <FadeIn delay={80}>
             <ScrollView
               ref={bannerRef}
@@ -239,7 +298,7 @@ export function HomeScreen({
               decelerationRate="fast"
             >
               {banners.map((src, i) => (
-                <View key={i} style={styles.bannerSlide}>
+                <View key={i} style={[styles.bannerSlide, { width: bannerW }]}>
                   <Image source={src} style={styles.bannerImage} contentFit="cover" />
                   <View style={styles.bannerOverlay}>
                     <Text style={styles.bannerEyebrow}>30-MIN DELIVERY</Text>
@@ -339,12 +398,12 @@ export function HomeScreen({
             <View style={styles.sectionHead}>
               <Text style={styles.sectionTitle}>Featured products</Text>
             </View>
-            <View style={styles.featuredGrid}>
+            <View style={[styles.featuredGrid, { paddingHorizontal: gutter, gap: cardGap }]}>
               {featured.map((p, i) => (
                 <FadeIn key={p.id} delay={i * 50} distance={14}>
                   <ProductCard
                     product={p}
-                    width={(SCREEN_W - H_PAD * 2 - CARD_GAP) / 2}
+                    width={featuredW}
                     onPress={() => onProductPress?.(p.id)}
                     onAddPress={() => onProductPress?.(p.id)}
                     onOpenCart={onCartPress}
@@ -444,7 +503,7 @@ function Section({
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.background },
+  screen: { flex: 1, backgroundColor: colors.background }, // phone-width canvas + page gutters
   loader: { flex: 1 },
   content: { paddingBottom: 48 },
   hero: {
@@ -521,7 +580,6 @@ const styles = StyleSheet.create({
   },
   bannerScroller: { paddingLeft: H_PAD, marginTop: 12 },
   bannerSlide: {
-    width: BANNER_W,
     height: 168,
     marginRight: H_PAD,
     borderRadius: radii.xl,
@@ -636,11 +694,14 @@ const styles = StyleSheet.create({
   },
   howRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     paddingHorizontal: H_PAD,
     gap: 12,
   },
   howCard: {
-    flex: 1,
+    flexGrow: 1,
+    flexBasis: 96,
+    minWidth: 96,
     backgroundColor: colors.surface,
     borderRadius: radii.lg,
     borderWidth: 1,
@@ -669,6 +730,30 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     textAlign: 'center',
     lineHeight: 13,
+  },
+  soonRow: { paddingHorizontal: H_PAD, gap: 10, paddingBottom: 4 },
+  soonCard: {
+    width: 200,
+    backgroundColor: colors.primaryMuted,
+    borderWidth: 1,
+    borderColor: colors.primary,
+    borderRadius: radii.lg,
+    padding: 12,
+  },
+  soonBadge: { ...typography.micro, color: colors.primaryDark, fontWeight: '800' },
+  soonTitle: { ...typography.label, color: colors.text, marginTop: 6 },
+  soonMeta: { ...typography.caption, color: colors.textSecondary, marginTop: 6 },
+  hirePromo: {
+    marginHorizontal: H_PAD,
+    marginTop: 16,
+    padding: 14,
+    borderRadius: radii.lg,
+    backgroundColor: colors.primaryMuted,
+    borderWidth: 1,
+    borderColor: colors.primary,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
   },
   toolBanner: {
     marginHorizontal: H_PAD,

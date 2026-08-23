@@ -1,0 +1,20 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: buildmart-postgres
+    environment:
+      POSTGRES_USER: buildmart
+      POSTGRES_PASSWORD: buildmart
+      POSTGRES_DB: buildmart
+    ports:
+      - "5432:5432"
+    volumes:
+      - buildmart_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U buildmart -d buildmart"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+volumes:
+  buildmart_pg:

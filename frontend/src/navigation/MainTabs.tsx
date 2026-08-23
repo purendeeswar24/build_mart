@@ -6,7 +6,7 @@ import {
   type BottomTabBarProps,
 } from '@react-navigation/bottom-tabs';
 import { getFocusedRouteNameFromRoute } from '@react-navigation/native';
-import { Home, Grid3x3, ShoppingCart, Package, User } from 'lucide-react-native';
+import { House, LayoutGrid, Hammer, ShoppingBag, ClipboardList, CircleUser } from 'lucide-react-native';
 import { TabBarIcon } from '../components/layout/TabBarIcon';
 import { FloatingCart } from '../components/feedback/FloatingCart';
 import { ToastHost } from '../components/feedback/ToastHost';
@@ -15,6 +15,7 @@ import { colors } from '../theme';
 import { AccountStack } from './AccountStack';
 import { CartStack } from './CartStack';
 import { CategoriesStack } from './CategoriesStack';
+import { HireStack } from './HireStack';
 import { HomeStack } from './HomeStack';
 import { OrdersStack } from './OrdersStack';
 import type { RootTabParamList } from './types';
@@ -69,12 +70,17 @@ export function MainTabs() {
             backgroundColor: colors.surface,
             borderTopColor: colors.border,
             height: 64,
-            paddingBottom: 10,
-            paddingTop: 8,
+            paddingBottom: 8,
+            paddingTop: 4,
+            paddingHorizontal: 2,
           },
           tabBarLabelStyle: {
-            fontSize: 11,
+            fontSize: 10,
             fontWeight: '600',
+          },
+          tabBarItemStyle: {
+            minWidth: 0,
+            paddingHorizontal: 0,
           },
         }}
       >
@@ -83,7 +89,7 @@ export function MainTabs() {
         options={{
           title: 'Home',
           tabBarIcon: ({ color, focused }) => (
-            <TabBarIcon icon={Home} color={color} focused={focused} />
+            <TabBarIcon icon={House} color={color} focused={focused} />
           ),
         }}
       >
@@ -91,6 +97,10 @@ export function MainTabs() {
           <HomeStack
             onOpenCart={() => navigation.navigate('CartTab')}
             onOpenAccount={() => navigation.navigate('AccountTab')}
+            onHirePress={() => navigation.navigate('HireTab')}
+            onHireJobPress={(jobId) =>
+              navigation.navigate('HireTab', { screen: 'HireJob', params: { jobId } })
+            }
           />
         )}
       </Tab.Screen>
@@ -100,7 +110,7 @@ export function MainTabs() {
         options={{
           title: 'Categories',
           tabBarIcon: ({ color, focused }) => (
-            <TabBarIcon icon={Grid3x3} color={color} focused={focused} />
+            <TabBarIcon icon={LayoutGrid} color={color} focused={focused} />
           ),
         }}
       >
@@ -113,6 +123,17 @@ export function MainTabs() {
       </Tab.Screen>
 
       <Tab.Screen
+        name="HireTab"
+        component={HireStack}
+        options={{
+          title: 'Work',
+          tabBarIcon: ({ color, focused }) => (
+            <TabBarIcon icon={Hammer} color={color} focused={focused} />
+          ),
+        }}
+      />
+
+      <Tab.Screen
         name="CartTab"
         component={CartStack}
         options={{
@@ -120,7 +141,7 @@ export function MainTabs() {
           tabBarBadge: count > 0 ? count : undefined,
           tabBarBadgeStyle: { backgroundColor: colors.primary, color: colors.primaryInk },
           tabBarIcon: ({ color, focused }) => (
-            <TabBarIcon icon={ShoppingCart} color={color} focused={focused} />
+            <TabBarIcon icon={ShoppingBag} color={color} focused={focused} />
           ),
         }}
       />
@@ -131,7 +152,7 @@ export function MainTabs() {
         options={{
           title: 'Orders',
           tabBarIcon: ({ color, focused }) => (
-            <TabBarIcon icon={Package} color={color} focused={focused} />
+            <TabBarIcon icon={ClipboardList} color={color} focused={focused} />
           ),
         }}
       />
@@ -142,7 +163,7 @@ export function MainTabs() {
         options={{
           title: 'Account',
           tabBarIcon: ({ color, focused }) => (
-            <TabBarIcon icon={User} color={color} focused={focused} />
+            <TabBarIcon icon={CircleUser} color={color} focused={focused} />
           ),
         }}
       />

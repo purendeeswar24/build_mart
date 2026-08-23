@@ -67,6 +67,10 @@ export const apiClient = {
     request<T>(path, { ...opts, method: 'GET' }),
   post: <T>(path: string, body?: unknown, opts?: Omit<RequestOpts, 'method' | 'body'>) =>
     request<T>(path, { ...opts, method: 'POST', body }),
+  patch: <T>(path: string, body?: unknown, opts?: Omit<RequestOpts, 'method' | 'body'>) =>
+    request<T>(path, { ...opts, method: 'PATCH', body }),
+  delete: <T>(path: string, opts?: Omit<RequestOpts, 'method' | 'body'>) =>
+    request<T>(path, { ...opts, method: 'DELETE' }),
   getAccessToken,
   setAccessToken,
 };

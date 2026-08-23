@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
-  Dimensions,
   FlatList,
   Pressable,
   ScrollView,
@@ -29,13 +28,12 @@ import {
   type FilterFacets,
   type ProductCardModel,
 } from '../../services/products.service';
+import { useLayout } from '../../hooks/useLayout';
 import { colors, radii, spacing, typography } from '../../theme';
 
-const SCREEN_W = Dimensions.get('window').width;
 const SIDEBAR_W = 88;
 const GRID_PAD = 14;
 const GRID_GAP = 14;
-const CARD_W = (SCREEN_W - SIDEBAR_W - GRID_PAD * 2 - GRID_GAP) / 2;
 const PAGE_SIZE = 8;
 
 type Props = {
@@ -53,6 +51,9 @@ export function CategoryDetailScreen({
   onSubcategoryPress,
   onOpenCart,
 }: Props) {
+  const { width, isMobile } = useLayout();
+  const gridCols = isMobile ? 2 : 3;
+  const cardW = (width - SIDEBAR_W - GRID_PAD * 2 - GRID_GAP * (gridCols - 1)) / gridCols;
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [products, setProducts] = useState<ProductCardModel[]>([]);
@@ -205,12 +206,13 @@ export function CategoryDetailScreen({
               onAction={() => void reload()}
             />
           ) : loading ? (
-            <ProductGridSkeleton count={4} cardWidth={CARD_W} />
+            <ProductGridSkeleton count={4} cardWidth={cardW} />
           ) : (
             <FlatList
               data={products}
               keyExtractor={(item) => item.id}
-              numColumns={2}
+              key={`grid-${gridCols}`}
+              numColumns={gridCols}
               columnWrapperStyle={styles.gridRow}
               contentContainerStyle={styles.grid}
               initialNumToRender={6}
@@ -236,7 +238,7 @@ export function CategoryDetailScreen({
               renderItem={({ item }) => (
                 <ProductCard
                   product={item}
-                  width={CARD_W}
+                  width={cardW}
                   onPress={() => onProductPress?.(item.id)}
                   onAddPress={() => onProductPress?.(item.id)}
                   onOpenCart={onOpenCart}

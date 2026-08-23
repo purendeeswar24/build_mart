@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import { NextFunction, Request, Response } from 'express';
 import { AppError } from './errorHandler.middleware';
 import { env } from '../config/env';
@@ -19,11 +20,30 @@ declare global {
   }
 }
 
-/** Demo token: base64url(JSON claims). Used only when Supabase is not configured. */
+function authSecret() {
+  if (env.AUTH_SECRET && env.AUTH_SECRET.length >= 16) return env.AUTH_SECRET;
+  if (env.NODE_ENV === 'production') {
+    throw new Error('AUTH_SECRET must be set to a long random string in production.');
+  }
+  return env.OTP_PEPPER || env.RAZORPAY_KEY_SECRET || 'buildmart-dev-auth';
+}
+
+function signPayload(payload: string) {
+  return crypto.createHmac('sha256', authSecret()).update(payload).digest('base64url');
+}
+
+function safeEqual(a: string, b: string) {
+  const left = Buffer.from(a);
+  const right = Buffer.from(b);
+  if (left.length !== right.length) return false;
+  return crypto.timingSafeEqual(left, right);
+}
+
 export function parseDemoToken(token: string): AuthClaims | null {
   try {
-    const json = Buffer.from(token, 'base64url').toString('utf8');
-    const claims = JSON.parse(json) as AuthClaims;
+    const [payload, signature] = token.split('.');
+    if (!payload || !signature || !safeEqual(signature, signPayload(payload))) return null;
+    const claims = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8')) as AuthClaims;
     if (!claims.sub) return null;
     if (claims.exp && claims.exp * 1000 < Date.now()) return null;
     return claims;
@@ -36,15 +56,18 @@ export function issueDemoToken(input: {
   userId: string;
   role: string;
   phone?: string;
+  email?: string;
   ttlSeconds?: number;
 }): string {
   const claims: AuthClaims = {
     sub: input.userId,
     role: input.role,
     phone: input.phone,
+    email: input.email,
     exp: Math.floor(Date.now() / 1000) + (input.ttlSeconds ?? 60 * 60 * 24 * 7),
   };
-  return Buffer.from(JSON.stringify(claims)).toString('base64url');
+  const payload = Buffer.from(JSON.stringify(claims)).toString('base64url');
+  return `${payload}.${signPayload(payload)}`;
 }
 
 async function resolveBearer(token: string): Promise<AuthClaims | null> {
@@ -62,8 +85,6 @@ async function resolveBearer(token: string): Promise<AuthClaims | null> {
     }
   }
 
-  // Demo tokens only outside strict production, or when Supabase isn't wired
-  if (env.NODE_ENV === 'production' && admin) return null;
   return parseDemoToken(token);
 }
 

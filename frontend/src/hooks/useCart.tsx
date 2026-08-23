@@ -37,17 +37,17 @@ type CartContextValue = {
 
 const CART_KEY = '@buildmart/cart';
 const CartContext = createContext<CartContextValue | null>(null);
-const CATALOG = productsService.listSeedCards();
 
-function priceFor(productId: string, variantLabel: string) {
+function priceFor(productId: string, variantLabel: string, catalog: ProductCardModel[]) {
   const v = SEED_VARIANTS.find(
     (x) => x.product_id === productId && x.variant_label === variantLabel,
   );
-  return v?.selling_price ?? CATALOG.find((p) => p.id === productId)?.price ?? 0;
+  return v?.selling_price ?? catalog.find((p) => p.id === productId)?.price ?? 0;
 }
 
 export function CartProvider({ children }: PropsWithChildren) {
   const [lines, setLines] = useState<CartLine[]>([]);
+  const [catalog, setCatalog] = useState<ProductCardModel[]>(() => productsService.listSeedCards());
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
@@ -59,6 +59,12 @@ export function CartProvider({ children }: PropsWithChildren) {
         setHydrated(true);
       }
     })();
+    productsService
+      .queryProducts()
+      .then((cards) => {
+        if (cards.length) setCatalog(cards);
+      })
+      .catch(() => undefined);
   }, []);
 
   useEffect(() => {
@@ -66,11 +72,11 @@ export function CartProvider({ children }: PropsWithChildren) {
     AsyncStorage.setItem(CART_KEY, JSON.stringify(lines));
   }, [lines, hydrated]);
 
-  const getProduct = useCallback((id: string) => CATALOG.find((p) => p.id === id), []);
+  const getProduct = useCallback((id: string) => catalog.find((p) => p.id === id), [catalog]);
 
   const addItem = useCallback(
     (productId: string, variantLabel = 'Default', qty = 1, unitPrice?: number) => {
-      const price = unitPrice ?? priceFor(productId, variantLabel);
+      const price = unitPrice ?? priceFor(productId, variantLabel, catalog);
       setLines((prev) => {
         const idx = prev.findIndex(
           (l) => l.productId === productId && l.variantLabel === variantLabel,
@@ -84,7 +90,7 @@ export function CartProvider({ children }: PropsWithChildren) {
       });
       analytics.addToCart(productId, qty);
     },
-    [],
+    [catalog],
   );
 
   const addMany = useCallback(

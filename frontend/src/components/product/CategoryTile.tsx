@@ -1,15 +1,49 @@
 import React, { useRef } from 'react';
-import { Animated, Dimensions, Pressable, StyleSheet, Text, ViewStyle } from 'react-native';
+import { Animated, Pressable, StyleSheet, Text, View, type ViewStyle } from 'react-native';
+import {
+  Box,
+  Droplets,
+  Hammer,
+  Layers,
+  Lightbulb,
+  PaintBucket,
+  Pipette,
+  Plug,
+  Shield,
+  SprayCan,
+  UtensilsCrossed,
+  Wrench,
+  type LucideIcon,
+} from 'lucide-react-native';
 import { colors, radii, shadows, typography } from '../../theme';
+import { useLayout } from '../../hooks/useLayout';
 import type { CatalogCategory } from '../../services/products.service';
 import { SafeImage } from '../media/SafeImage';
 
 const GAP = 10;
-const H_PAD = 20;
-/** Compact 4-up home strip — less vertical space */
-export const CATEGORY_TILE_SIZE = (Dimensions.get('window').width - H_PAD * 2 - GAP * 3) / 4;
-/** Mini size for horizontal scroller */
-export const CATEGORY_MINI_SIZE = 76;
+
+export function categoryTileSizeFor(width: number, gutter = 20, columns = 4) {
+  return (width - gutter * 2 - GAP * Math.max(columns - 1, 0)) / columns;
+}
+
+const ICON_BY_SLUG: Record<string, LucideIcon> = {
+  'plywood-boards': Layers,
+  'building-materials': Box,
+  'ceiling-solutions': Layers,
+  electricals: Plug,
+  'adhesive-bonding': SprayCan,
+  'kitchen-fixtures': UtensilsCrossed,
+  lighting: Lightbulb,
+  'hardware-accessories': Wrench,
+  paints: PaintBucket,
+  'sanitary-bath': Droplets,
+  'industrial-steel': Shield,
+  'water-proofing': Shield,
+  tools: Hammer,
+  'tiles-accessories': Layers,
+  'plumbing-pipes': Pipette,
+  'home-kitchen': UtensilsCrossed,
+};
 
 type Props = {
   category: CatalogCategory;
@@ -28,8 +62,10 @@ export function CategoryTile({
   size,
   mini = false,
 }: Props) {
-  const dim = size ?? (mini ? CATEGORY_MINI_SIZE : CATEGORY_TILE_SIZE);
+  const { width, gutter } = useLayout();
+  const dim = size ?? (mini ? 76 : categoryTileSizeFor(width, gutter));
   const scale = useRef(new Animated.Value(1)).current;
+  const Icon = ICON_BY_SLUG[category.slug] ?? Box;
 
   return (
     <Pressable
@@ -54,10 +90,13 @@ export function CategoryTile({
       >
         <SafeImage
           source={category.image}
-          style={{ width: '100%', height: '100%', borderRadius: mini ? radii.sm : radii.md }}
+          style={{ width: '100%', height: '100%', borderRadius: mini ? radii.md : radii.lg }}
           contentFit="cover"
           transition={220}
         />
+        <View style={[styles.iconBadge, mini && styles.iconBadgeMini]}>
+          <Icon size={mini ? 12 : 14} color={colors.primaryInk} strokeWidth={2.4} />
+        </View>
       </Animated.View>
       <Text style={[styles.label, mini && styles.labelMini]} numberOfLines={2}>
         {compact || mini ? category.shortName : category.name}
@@ -66,9 +105,13 @@ export function CategoryTile({
   );
 }
 
+/** @deprecated use categoryTileSizeFor(width) */
+export const CATEGORY_TILE_SIZE = 76;
+export const CATEGORY_MINI_SIZE = 76;
+
 const styles = StyleSheet.create({
   tile: {
-    borderRadius: radii.md,
+    borderRadius: radii.lg,
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
@@ -76,7 +119,27 @@ const styles = StyleSheet.create({
     ...shadows.soft,
   },
   tileMini: {
-    borderRadius: radii.sm,
+    borderRadius: radii.md,
+  },
+  iconBadge: {
+    position: 'absolute',
+    right: 6,
+    bottom: 6,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.7)',
+  },
+  iconBadgeMini: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    right: 4,
+    bottom: 4,
   },
   label: {
     ...typography.micro,

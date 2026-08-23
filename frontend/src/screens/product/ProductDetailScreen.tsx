@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
-  Dimensions,
   Pressable,
   ScrollView,
   Share,
@@ -24,11 +23,9 @@ import { useCart } from '../../hooks/useCart';
 import { useFeedback } from '../../hooks/useFeedback';
 import { useWishlist } from '../../hooks/useWishlist';
 import { discountPercent, formatPrice } from '../../utils/formatPrice';
+import { useLayout } from '../../hooks/useLayout';
 import { colors, spacing, typography } from '../../theme';
 import { a11y } from '../../theme/a11y';
-
-const SCREEN_W = Dimensions.get('window').width;
-const HERO_W = Math.min(SCREEN_W - 32, 560);
 
 type Props = {
   productId: string;
@@ -37,6 +34,8 @@ type Props = {
 };
 
 export function ProductDetailScreen({ productId, onAdded, onProductPress }: Props) {
+  const { width, gutter } = useLayout();
+  const heroW = Math.max(width - gutter * 2, 240);
   const [detail, setDetail] = useState<ProductDetailModel | null>(null);
   const [similar, setSimilar] = useState<ProductCardModel[]>([]);
   const [accessories, setAccessories] = useState<ProductCardModel[]>([]);
@@ -194,11 +193,11 @@ export function ProductDetailScreen({ productId, onAdded, onProductPress }: Prop
           pagingEnabled
           showsHorizontalScrollIndicator={false}
           onMomentumScrollEnd={(e) => {
-            setImageIndex(Math.round(e.nativeEvent.contentOffset.x / HERO_W));
+            setImageIndex(Math.round(e.nativeEvent.contentOffset.x / heroW));
           }}
         >
           {images.map((src, i) => (
-            <View key={i} style={[styles.hero, { backgroundColor: variant.imageTint }]}>
+            <View key={i} style={[styles.hero, { width: heroW, backgroundColor: variant.imageTint }]}>
               <SafeImage
                 source={src}
                 style={styles.heroImage}
@@ -505,7 +504,6 @@ const styles = StyleSheet.create({
     borderRadius: 22,
   },
   hero: {
-    width: HERO_W,
     height: 280,
     borderRadius: 16,
     marginTop: 8,

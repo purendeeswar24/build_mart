@@ -12,9 +12,11 @@ const Stack = createNativeStackNavigator<HomeStackParamList>();
 type Props = {
   onOpenCart: () => void;
   onOpenAccount: () => void;
+  onHirePress?: () => void;
+  onHireJobPress?: (jobId: string) => void;
 };
 
-export function HomeStack({ onOpenCart, onOpenAccount }: Props) {
+export function HomeStack({ onOpenCart, onOpenAccount, onHirePress, onHireJobPress }: Props) {
   return (
     <Stack.Navigator>
       <Stack.Screen name="Home" options={{ headerShown: false }}>
@@ -35,6 +37,8 @@ export function HomeStack({ onOpenCart, onOpenAccount }: Props) {
             onCategoriesTab={() => navigation.getParent()?.navigate('CategoriesTab' as never)}
             onProductPress={(productId) => navigation.navigate('ProductDetail', { productId })}
             onCapacityPress={() => navigation.navigate('CapacityCalculator')}
+            onHirePress={onHirePress}
+            onHireJobPress={onHireJobPress}
           />
         )}
       </Stack.Screen>

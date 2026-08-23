@@ -15,8 +15,27 @@ const envSchema = z.object({
   RAZORPAY_KEY_SECRET: z.string().optional(),
   RAZORPAY_WEBHOOK_SECRET: z.string().optional(),
   JWT_AUDIENCE: z.string().optional(),
+  /** Pooled Neon URL for the API. Frontend never sees this. */
+  DATABASE_URL: z.string().optional(),
+  /** Direct (non-pooler) Neon URL — used for schema migrations. */
+  DATABASE_URL_UNPOOLED: z.string().optional(),
   /** Comma-separated allowed origins in production (e.g. https://app.buildmart.in,https://admin.buildmart.in) */
   CORS_ORIGINS: z.string().optional(),
+  /** Resend API key — free tier is enough for email OTPs. */
+  RESEND_API_KEY: z.string().optional(),
+  /** Verified sender. Resend test sender works without a custom domain. */
+  RESEND_FROM_EMAIL: z.string().default('BuildMart <beth.t@example.com>'),
+  /** Extra secret mixed into OTP hashes. */
+  OTP_PEPPER: z.string().optional(),
+  /** HMAC secret for session tokens. Required in production. */
+  AUTH_SECRET: z.string().optional(),
+  GOOGLE_MAPS_API_KEY: z.string().optional(),
+  GOOGLE_PLACES_API_KEY: z.string().optional(),
+  /** Set to false to disable local test users even in development. */
+  ALLOW_TEST_ACCOUNTS: z
+    .string()
+    .optional()
+    .transform((v) => (v == null ? undefined : v === '1' || v === 'true')),
 });
 
 const parsed = envSchema.safeParse(process.env);

@@ -10,6 +10,7 @@ import {
   View,
 } from 'react-native';
 import { Headset, Mail, MapPin, Phone } from 'lucide-react-native';
+import { SUPPORT } from '../../config/support';
 import { useAuth } from '../../hooks/useAuth';
 import { colors, radii, spacing, typography } from '../../theme';
 
@@ -48,7 +49,7 @@ export function SupportScreen({ mode = 'support' }: Props) {
         <Text style={styles.sub}>
           {isBulk
             ? 'For contractors, engineers & vendors — GST invoice ready.'
-            : 'We’re here 8am–8pm IST for delivery & product help.'}
+            : `We’re here ${SUPPORT.hours} for delivery, materials and work-bid help.`}
         </Text>
       </View>
 
@@ -56,17 +57,17 @@ export function SupportScreen({ mode = 'support' }: Props) {
         <View style={styles.block}>
           <Pressable
             style={styles.row}
-            onPress={() => void Linking.openURL('tel:+918001234567')}
+            onPress={() => void Linking.openURL(SUPPORT.phoneTel)}
           >
             <Phone size={16} color={colors.primaryDark} />
-            <Text style={styles.rowText}>+91 80012 34567</Text>
+            <Text style={styles.rowText}>{SUPPORT.phoneDisplay}</Text>
           </Pressable>
           <Pressable
             style={styles.row}
-            onPress={() => void Linking.openURL('mailto:support@buildmart.app')}
+            onPress={() => void Linking.openURL(SUPPORT.emailMailto)}
           >
             <Mail size={16} color={colors.primaryDark} />
-            <Text style={styles.rowText}>support@buildmart.app</Text>
+            <Text style={styles.rowText}>{SUPPORT.email}</Text>
           </Pressable>
           <View style={styles.row}>
             <MapPin size={16} color={colors.primaryDark} />

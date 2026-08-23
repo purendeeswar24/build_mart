@@ -55,15 +55,24 @@ async function main() {
     });
   }
 
-  // 3. Demo OTP
+  // 3. Phone OTP must not leak a code
   {
-    const { status, json } = await req('/api/v1/auth/otp/verify', {
-      body: { phone: '9999999999', otp: '123456', fullName: 'Smoke Test' },
+    const sent = await req('/api/v1/auth/otp/send', {
+      body: { channel: 'phone', phone: '9999999999' },
     });
     results.push({
-      name: 'POST /api/v1/auth/otp/verify (demo)',
-      ok: status === 200 && !!json.token,
-      detail: status === 200 ? 'token issued' : JSON.stringify(json),
+      name: 'POST /api/v1/auth/otp/send phone does not return a code',
+      ok: sent.status >= 400 && !sent.json.devCode,
+      detail: JSON.stringify(sent.json),
+    });
+  }
+
+  {
+    const { status } = await req('/api/v1/admin/stats');
+    results.push({
+      name: 'GET /api/v1/admin/stats without auth → 401',
+      ok: status === 401,
+      detail: `status=${status}`,
     });
   }
 

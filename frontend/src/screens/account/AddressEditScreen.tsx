@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -11,7 +12,9 @@ import {
 } from 'react-native';
 import { MapPin } from 'lucide-react-native';
 import { checkPincode, type AddressLabel } from '../../services/address.service';
-import { locationService } from '../../services/location.service';
+import { LocationPermissionError, locationService } from '../../services/location.service';
+import { LocationPermissionCard } from '../../components/location/LocationPermissionCard';
+import { MapPinPicker } from '../../components/location/MapPinPicker';
 import { useAddress } from '../../hooks/useAddress';
 import { validatePincode, validateRequired } from '../../utils/validation';
 import { colors, radii, spacing, typography } from '../../theme';
@@ -30,26 +33,54 @@ export function AddressEditScreen({ addressId, onSaved }: Props) {
   const [pincode, setPincode] = useState(existing?.pincode ?? '');
   const [city, setCity] = useState(existing?.city ?? '');
   const [isDefault, setIsDefault] = useState(existing?.isDefault ?? false);
-  const [coords, setCoords] = useState<{ latitude?: number; longitude?: number }>({
+  const [coords, setCoords] = useState<{ latitude?: number; longitude?: number; accuracy?: number }>({
     latitude: existing?.latitude,
     longitude: existing?.longitude,
   });
   const [locating, setLocating] = useState(false);
+  const [locateNote, setLocateNote] = useState('');
+  const [askLocation, setAskLocation] = useState(false);
+  const [locationBlocked, setLocationBlocked] = useState(false);
   const [errors, setErrors] = useState<{ address?: string; pincode?: string }>({});
 
   const status = useMemo(() => checkPincode(pincode), [pincode]);
 
+  const applyResolved = (loc: Awaited<ReturnType<typeof locationService.detectUserLocation>>) => {
+    setCoords({ latitude: loc.latitude, longitude: loc.longitude, accuracy: loc.accuracy });
+    setFullAddress(loc.label);
+    if (loc.city) setCity(loc.city);
+    if (loc.suggestedPincode) setPincode(loc.suggestedPincode);
+    setErrors({});
+    setAskLocation(false);
+    setLocationBlocked(false);
+    setLocateNote(locationService.describeLocation(loc));
+  };
+
+  const movePin = async (latitude: number, longitude: number) => {
+    setCoords((prev) => ({ ...prev, latitude, longitude }));
+    try {
+      const loc = await locationService.reverseGeocode(latitude, longitude);
+      applyResolved({ ...loc, latitude, longitude, accuracy: coords.accuracy });
+    } catch {
+      setLocateNote(`Pinned ${latitude.toFixed(5)}, ${longitude.toFixed(5)}`);
+    }
+  };
+
   const useMyLocation = async () => {
     setLocating(true);
+    setLocateNote('Allow location in the popup…');
+    setAskLocation(false);
+    setLocationBlocked(false);
     try {
-      const loc = await locationService.detectUserLocation();
-      setCoords({ latitude: loc.latitude, longitude: loc.longitude });
-      setFullAddress(loc.label);
-      if (loc.city) setCity(loc.city);
-      if (loc.suggestedPincode) setPincode(loc.suggestedPincode);
-      setErrors({});
+      applyResolved(await locationService.detectUserLocation());
     } catch (e) {
-      Alert.alert('Location', e instanceof Error ? e.message : 'Could not get location');
+      const denied =
+        e instanceof LocationPermissionError &&
+        (e.status === 'denied' || e.status === 'unavailable');
+      const message = e instanceof Error ? e.message : 'Could not get location';
+      setLocationBlocked(denied);
+      setAskLocation(true);
+      setLocateNote(message);
     } finally {
       setLocating(false);
     }
@@ -85,22 +116,64 @@ export function AddressEditScreen({ addressId, onSaved }: Props) {
 
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
-      <Pressable
-        style={styles.locateBtn}
-        onPress={() => void useMyLocation()}
-        disabled={locating}
-        accessibilityRole="button"
-        accessibilityLabel="Use my current location"
-      >
-        {locating ? (
-          <ActivityIndicator color={colors.primaryInk} />
-        ) : (
-          <MapPin size={16} color={colors.primaryInk} />
-        )}
-        <Text style={styles.locateText}>
-          {locating ? 'Detecting location…' : 'Use my current location'}
-        </Text>
-      </Pressable>
+      {Platform.OS === 'web' ? (
+        <button
+          type="button"
+          disabled={locating}
+          onClick={() => void useMyLocation()}
+          style={{
+            display: 'flex',
+            width: '100%',
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 8,
+            background: colors.primary,
+            border: 0,
+            borderRadius: 12,
+            padding: '12px 0',
+            marginBottom: 8,
+            fontWeight: 800,
+            fontSize: 13,
+            color: colors.primaryInk,
+            cursor: locating ? 'wait' : 'pointer',
+          }}
+        >
+          {locating ? 'Waiting for permission…' : 'Use my current location'}
+        </button>
+      ) : (
+        <Pressable
+          style={styles.locateBtn}
+          onPress={() => void useMyLocation()}
+          disabled={locating}
+          accessibilityRole="button"
+          accessibilityLabel="Use my current location"
+        >
+          {locating ? (
+            <ActivityIndicator color={colors.primaryInk} />
+          ) : (
+            <MapPin size={16} color={colors.primaryInk} />
+          )}
+          <Text style={styles.locateText}>
+            {locating ? 'Waiting for permission…' : 'Use my current location'}
+          </Text>
+        </Pressable>
+      )}
+      <LocationPermissionCard
+        visible={askLocation}
+        waiting={locating}
+        blocked={locationBlocked}
+        onRetry={() => void useMyLocation()}
+      />
+      {locateNote && !askLocation ? <Text style={styles.hint}>{locateNote}</Text> : null}
+      {coords.latitude != null && coords.longitude != null ? (
+        <MapPinPicker
+          latitude={coords.latitude}
+          longitude={coords.longitude}
+          accuracy={coords.accuracy}
+          onChange={(lat, lng) => void movePin(lat, lng)}
+        />
+      ) : null}
 
       <Text style={styles.label}>Label</Text>
       <View style={styles.row}>
