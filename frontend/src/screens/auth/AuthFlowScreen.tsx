@@ -12,13 +12,19 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Hammer } from 'lucide-react-native';
+import { Hammer, LockKeyhole, Mail, ShieldCheck, UserRound } from 'lucide-react-native';
 import { useAuth } from '../../hooks/useAuth';
 import { ROLE_OPTIONS, type UserRole } from '../../services/auth.service';
-import { validateEmail, validatePhone, validateRequired } from '../../utils/validation';
-import { colors, radii, spacing, typography } from '../../theme';
+import {
+  validateEmail,
+  validatePassword,
+  validatePhone,
+  validateRequired,
+  validateUsername,
+} from '../../utils/validation';
+import { colors, typography } from '../../theme';
 
-type Mode = 'welcome' | 'register' | 'otp' | 'login' | 'email';
+type Mode = 'welcome' | 'register' | 'verify' | 'login' | 'phone';
 
 type Props = {
   asModal?: boolean;
@@ -28,17 +34,19 @@ type Props = {
 
 export function AuthFlowScreen({ asModal, onClose, onDone }: Props) {
   const insets = useSafeAreaInsets();
-  const { width } = useWindowDimensions();
-  const hPad = width < 600 ? 16 : 36;
-  const { sendOtp, verifyOtp, loginEmail } = useAuth();
+  const { sendOtp, verifyOtp, verifyEmailOtp, register, loginPassword } = useAuth();
 
   const [mode, setMode] = useState<Mode>(asModal ? 'login' : 'welcome');
   const [phone, setPhone] = useState('');
   const [fullName, setFullName] = useState('');
+  const [username, setUsername] = useState('');
   const [role, setRole] = useState<UserRole>('homeowner');
   const [otp, setOtp] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirm, setConfirm] = useState('');
+  const [loginId, setLoginId] = useState('');
+  const [otpHint, setOtpHint] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -79,165 +87,35 @@ export function AuthFlowScreen({ asModal, onClose, onDone }: Props) {
             <Hammer size={26} color={colors.primaryInk} />
           </View>
           <Text style={styles.brandTitle}>BuildMart</Text>
-          <Text style={styles.brandSub}>Materials & skilled help, delivered fast</Text>
+          <Text style={styles.brandSub}>Secure account · verified email · fast checkout</Text>
         </View>
 
         {mode === 'welcome' ? (
-          <View style={styles.block}>
+          <View style={styles.heroCard}>
+            <Text style={styles.heroKicker}>Welcome</Text>
+            <Text style={styles.heroTitle}>Materials, priced right. Delivered fast.</Text>
             <Pressable style={styles.primaryBtn} onPress={() => setMode('register')}>
-              <Text style={styles.primaryBtnText}>Create Account</Text>
+              <Text style={styles.primaryBtnText}>Create account</Text>
             </Pressable>
             <Pressable style={styles.secondaryBtn} onPress={() => setMode('login')}>
-              <Text style={styles.secondaryBtnText}>Login</Text>
+              <Text style={styles.secondaryBtnText}>Sign in with user ID</Text>
             </Pressable>
           </View>
         ) : null}
 
-        {mode === 'register' || mode === 'login' ? (
-          <View style={styles.block}>
-            {mode === 'register' ? (
-              <>
-                <Text style={styles.label}>Full name</Text>
-                <TextInput
-                  value={fullName}
-                  onChangeText={setFullName}
-                  placeholder="Rajesh Kumar"
-                  placeholderTextColor={PLACEHOLDER}
-                  selectionColor={colors.primary}
-                  cursorColor={INPUT_TEXT}
-                  style={styles.input}
-                />
-              </>
-            ) : null}
-
-            <Text style={styles.label}>Phone number</Text>
-            <View style={styles.phoneRow}>
-              <Text style={styles.cc}>+91</Text>
-              <TextInput
-                value={phone}
-                onChangeText={setPhone}
-                keyboardType="phone-pad"
-                maxLength={10}
-                placeholder="98765 43210"
-                placeholderTextColor={PLACEHOLDER}
-                selectionColor={colors.primary}
-                cursorColor={INPUT_TEXT}
-                style={styles.phoneInput}
-              />
+        {mode === 'login' ? (
+          <View style={styles.card}>
+            <View style={styles.cardHead}>
+              <LockKeyhole size={18} color={colors.primary} />
+              <Text style={styles.cardTitle}>Sign in</Text>
             </View>
-
-            {mode === 'register' ? (
-              <>
-                <Text style={styles.label}>I am a</Text>
-                <View style={styles.roles}>
-                  {ROLE_OPTIONS.map((opt) => (
-                    <Pressable
-                      key={opt.value}
-                      onPress={() => setRole(opt.value)}
-                      style={[styles.roleChip, role === opt.value && styles.roleChipOn]}
-                    >
-                      <Text style={[styles.roleText, role === opt.value && styles.roleTextOn]}>
-                        {opt.label}
-                      </Text>
-                    </Pressable>
-                  ))}
-                </View>
-              </>
-            ) : null}
-
-            <Pressable
-              style={styles.primaryBtn}
-              disabled={loading}
-              onPress={() =>
-                run(async () => {
-                  const phoneErr = validatePhone(phone);
-                  if (phoneErr) throw new Error(phoneErr);
-                  if (mode === 'register') {
-                    const nameErr = validateRequired(fullName, 'Full name', 2);
-                    if (nameErr) throw new Error(nameErr);
-                  }
-                  await sendOtp(phone);
-                  setMode('otp');
-                })
-              }
-            >
-              {loading ? (
-                <ActivityIndicator color={colors.primaryInk} />
-              ) : (
-                <Text style={styles.primaryBtnText}>Send OTP</Text>
-              )}
-            </Pressable>
-
-            <View style={styles.orRow}>
-              <View style={styles.orLine} />
-              <Text style={styles.orText}>or</Text>
-              <View style={styles.orLine} />
-            </View>
-
-            <Pressable style={styles.secondaryBtn} onPress={() => setMode('email')}>
-              <Text style={styles.secondaryBtnText}>Continue with email</Text>
-            </Pressable>
-
-            <Pressable
-              onPress={() => setMode(mode === 'login' ? 'register' : 'login')}
-              style={styles.switchRow}
-            >
-              <Text style={styles.switchMuted}>
-                {mode === 'login' ? "Don't have an account? " : 'Already have an account? '}
-                <Text style={styles.switchAccent}>{mode === 'login' ? 'Create one' : 'Log in'}</Text>
-              </Text>
-            </Pressable>
-          </View>
-        ) : null}
-
-        {mode === 'otp' ? (
-          <View style={styles.block}>
-            <Text style={styles.label}>Enter OTP sent to +91 {phone}</Text>
+            <Text style={styles.label}>User ID or email</Text>
             <TextInput
-              value={otp}
-              onChangeText={setOtp}
-              keyboardType="number-pad"
-              maxLength={6}
-              placeholder="123456"
-              placeholderTextColor={PLACEHOLDER}
-              selectionColor={colors.primary}
-              cursorColor={INPUT_TEXT}
-              style={styles.input}
-            />
-            <Text style={styles.hint}>Demo OTP: 123456</Text>
-            <Pressable
-              style={styles.primaryBtn}
-              disabled={loading}
-              onPress={() =>
-                run(async () => {
-                  await verifyOtp({ phone, otp, fullName, role });
-                }, { finish: true })
-              }
-            >
-              {loading ? (
-                <ActivityIndicator color={colors.primaryInk} />
-              ) : (
-                <Text style={styles.primaryBtnText}>Verify & continue</Text>
-              )}
-            </Pressable>
-            <Pressable onPress={() => setMode('login')} style={styles.switchRow}>
-              <Text style={styles.switchAccent}>Change number</Text>
-            </Pressable>
-          </View>
-        ) : null}
-
-        {mode === 'email' ? (
-          <View style={styles.block}>
-            <Text style={styles.label}>Email</Text>
-            <TextInput
-              value={email}
-              onChangeText={setEmail}
+              value={loginId}
+              onChangeText={setLoginId}
               autoCapitalize="none"
-              keyboardType="email-address"
-              placeholder="you@example.com"
-              placeholderTextColor={PLACEHOLDER}
-              selectionColor={colors.primary}
-              cursorColor={INPUT_TEXT}
+              placeholder="rajesh_k or you@gmail.com"
+              placeholderTextColor="#5C596A"
               style={styles.input}
             />
             <Text style={styles.label}>Password</Text>
@@ -256,21 +134,226 @@ export function AuthFlowScreen({ asModal, onClose, onDone }: Props) {
               disabled={loading}
               onPress={() =>
                 run(async () => {
+                  if (!loginId.trim()) throw new Error('Enter your user ID or email');
+                  if (!password) throw new Error('Enter your password');
+                  await loginPassword(loginId, password);
+                }, { finish: true })
+              }
+            >
+              {loading ? <ActivityIndicator color={colors.primaryInk} /> : <Text style={styles.primaryBtnText}>Sign in</Text>}
+            </Pressable>
+            <Pressable style={styles.linkBtn} onPress={() => setMode('phone')}>
+              <Text style={styles.switchAccent}>Use phone OTP instead</Text>
+            </Pressable>
+            <Pressable onPress={() => setMode('register')} style={styles.switchRow}>
+              <Text style={styles.switchMuted}>
+                New here? <Text style={styles.switchAccent}>Create an account</Text>
+              </Text>
+            </Pressable>
+          </View>
+        ) : null}
+
+        {mode === 'register' ? (
+          <View style={styles.card}>
+            <View style={styles.cardHead}>
+              <UserRound size={18} color={colors.primary} />
+              <Text style={styles.cardTitle}>Create account</Text>
+            </View>
+            <Text style={styles.label}>Full name</Text>
+            <TextInput
+              value={fullName}
+              onChangeText={setFullName}
+              placeholder="Rajesh Kumar"
+              placeholderTextColor="#5C596A"
+              style={styles.input}
+            />
+            <Text style={styles.label}>User ID</Text>
+            <TextInput
+              value={username}
+              onChangeText={(t) => setUsername(t.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
+              autoCapitalize="none"
+              placeholder="rajesh_k"
+              placeholderTextColor="#5C596A"
+              style={styles.input}
+            />
+            <Text style={styles.label}>Email — we will verify this</Text>
+            <TextInput
+              value={email}
+              onChangeText={setEmail}
+              autoCapitalize="none"
+              keyboardType="email-address"
+              placeholder="you@gmail.com"
+              placeholderTextColor="#5C596A"
+              style={styles.input}
+            />
+            <Text style={styles.label}>Password</Text>
+            <TextInput
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry
+              placeholder="Min 8 chars, letter + number"
+              placeholderTextColor="#5C596A"
+              style={styles.input}
+            />
+            <Text style={styles.label}>Confirm password</Text>
+            <TextInput
+              value={confirm}
+              onChangeText={setConfirm}
+              secureTextEntry
+              placeholder="Repeat password"
+              placeholderTextColor="#5C596A"
+              style={styles.input}
+            />
+            <Text style={styles.label}>I am a</Text>
+            <View style={styles.roles}>
+              {ROLE_OPTIONS.map((opt) => (
+                <Pressable
+                  key={opt.value}
+                  onPress={() => setRole(opt.value)}
+                  style={[styles.roleChip, role === opt.value && styles.roleChipOn]}
+                >
+                  <Text style={[styles.roleText, role === opt.value && styles.roleTextOn]}>{opt.label}</Text>
+                </Pressable>
+              ))}
+            </View>
+            <Pressable
+              style={styles.primaryBtn}
+              disabled={loading}
+              onPress={() =>
+                run(async () => {
+                  const nameErr = validateRequired(fullName, 'Full name', 2);
+                  if (nameErr) throw new Error(nameErr);
+                  const userErr = validateUsername(username);
+                  if (userErr) throw new Error(userErr);
                   const emailErr = validateEmail(email);
                   if (emailErr) throw new Error(emailErr);
-                  if (password.length < 4) throw new Error('Password must be at least 4 characters');
-                  await loginEmail(email, password);
+                  const passErr = validatePassword(password);
+                  if (passErr) throw new Error(passErr);
+                  if (password !== confirm) throw new Error('Passwords do not match');
+                  const created = await register({ username, email, password, fullName, role });
+                  setOtpHint(created.hint ?? 'We emailed a verification code.');
+                  setOtp('');
+                  setMode('verify');
+                })
+              }
+            >
+              {loading ? (
+                <ActivityIndicator color={colors.primaryInk} />
+              ) : (
+                <Text style={styles.primaryBtnText}>Verify email & create</Text>
+              )}
+            </Pressable>
+            <Pressable onPress={() => setMode('login')} style={styles.switchRow}>
+              <Text style={styles.switchMuted}>
+                Already have an account? <Text style={styles.switchAccent}>Sign in</Text>
+              </Text>
+            </Pressable>
+          </View>
+        ) : null}
+
+        {mode === 'verify' && email ? (
+          <View style={styles.card}>
+            <View style={styles.cardHead}>
+              <ShieldCheck size={18} color={colors.primary} />
+              <Text style={styles.cardTitle}>Verify email</Text>
+            </View>
+            <Text style={styles.hint}>{otpHint || `Enter the 6-digit code sent to ${email}`}</Text>
+            <TextInput
+              value={otp}
+              onChangeText={setOtp}
+              keyboardType="number-pad"
+              maxLength={6}
+              placeholder="6-digit code"
+              placeholderTextColor="#5C596A"
+              style={styles.input}
+            />
+            <Pressable
+              style={styles.primaryBtn}
+              disabled={loading}
+              onPress={() =>
+                run(async () => {
+                  if (!/^\d{6}$/.test(otp.trim())) throw new Error('Enter the 6-digit code');
+                  await verifyEmailOtp({ email, otp, fullName, role });
                 }, { finish: true })
               }
             >
               {loading ? (
                 <ActivityIndicator color={colors.primaryInk} />
               ) : (
-                <Text style={styles.primaryBtnText}>Log in</Text>
+                <Text style={styles.primaryBtnText}>Confirm & sign in</Text>
               )}
             </Pressable>
+            <Pressable onPress={() => setMode('register')} style={styles.switchRow}>
+              <Text style={styles.switchAccent}>Change details</Text>
+            </Pressable>
+          </View>
+        ) : null}
+
+        {mode === 'phone' ? (
+          <View style={styles.card}>
+            <View style={styles.cardHead}>
+              <Mail size={18} color={colors.primary} />
+              <Text style={styles.cardTitle}>Phone OTP</Text>
+            </View>
+            <Text style={styles.label}>Mobile number</Text>
+            <View style={styles.phoneRow}>
+              <Text style={styles.cc}>+91</Text>
+              <TextInput
+                value={phone}
+                onChangeText={setPhone}
+                keyboardType="phone-pad"
+                maxLength={10}
+                placeholder="98765 43210"
+                placeholderTextColor="#5C596A"
+                style={styles.phoneInput}
+              />
+            </View>
+            <Pressable
+              style={styles.primaryBtn}
+              disabled={loading}
+              onPress={() =>
+                run(async () => {
+                  const phoneErr = validatePhone(phone);
+                  if (phoneErr) throw new Error(phoneErr);
+                  const sent = await sendOtp(phone);
+                  setOtpHint(sent.hint ?? 'Enter the code sent to your phone.');
+                  setOtp('');
+                  setMode('verify');
+                  setEmail('');
+                })
+              }
+            >
+              {loading ? <ActivityIndicator color={colors.primaryInk} /> : <Text style={styles.primaryBtnText}>Send OTP</Text>}
+            </Pressable>
             <Pressable onPress={() => setMode('login')} style={styles.switchRow}>
-              <Text style={styles.switchAccent}>Use phone instead</Text>
+              <Text style={styles.switchAccent}>Back to user ID login</Text>
+            </Pressable>
+          </View>
+        ) : null}
+
+        {mode === 'verify' && !email && phone ? (
+          <View style={styles.card}>
+            <Text style={styles.label}>Enter OTP for +91 {phone}</Text>
+            <TextInput
+              value={otp}
+              onChangeText={setOtp}
+              keyboardType="number-pad"
+              maxLength={6}
+              placeholder="6-digit code"
+              placeholderTextColor="#5C596A"
+              style={styles.input}
+            />
+            <Pressable
+              style={styles.primaryBtn}
+              disabled={loading}
+              onPress={() =>
+                run(async () => {
+                  if (!/^\d{6}$/.test(otp.trim())) throw new Error('Enter the 6-digit code');
+                  await verifyOtp({ phone, otp, fullName, role });
+                }, { finish: true })
+              }
+            >
+              {loading ? <ActivityIndicator color={colors.primaryInk} /> : <Text style={styles.primaryBtnText}>Verify & continue</Text>}
             </Pressable>
           </View>
         ) : null}
@@ -296,75 +379,53 @@ const inputWeb =
     : null;
 
 const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: colors.secondary,
-  },
-  content: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 40,
-  },
-  form: {
-    width: '100%',
-    maxWidth: 340,
-  },
-  closeRow: {
-    alignSelf: 'flex-end',
-    marginBottom: 8,
-  },
-  closeText: {
-    color: colors.textMuted,
-    fontSize: 13,
-  },
-  brand: {
-    alignItems: 'center',
-    marginBottom: 28,
-  },
+  root: { flex: 1, backgroundColor: colors.secondary },
+  content: { paddingHorizontal: 22, paddingBottom: 40 },
+  closeRow: { alignSelf: 'flex-end', marginBottom: 8 },
+  closeText: { color: colors.textMuted, fontSize: 13 },
+  brand: { alignItems: 'center', paddingTop: 20, marginBottom: 22 },
   logoBox: {
-    width: 52,
-    height: 52,
-    borderRadius: 14,
+    width: 56,
+    height: 56,
+    borderRadius: 16,
     backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 14,
+    marginBottom: 12,
   },
-  brandTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: colors.textInverse,
+  brandTitle: { fontSize: 22, fontWeight: '800', color: colors.textInverse, letterSpacing: -0.4 },
+  brandSub: { fontSize: 12, color: '#8B889B', marginTop: 4, textAlign: 'center' },
+  heroCard: {
+    backgroundColor: '#141414',
+    borderRadius: 18,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: '#2A2A2A',
   },
-  brandSub: {
-    fontSize: 12,
-    color: '#A8A5B5',
-    marginTop: 6,
-    textAlign: 'center',
+  heroKicker: { color: colors.primary, fontSize: 11, fontWeight: '700', letterSpacing: 1, textTransform: 'uppercase' },
+  heroTitle: { color: colors.textInverse, fontSize: 22, fontWeight: '800', marginVertical: 12, lineHeight: 28 },
+  card: {
+    backgroundColor: '#141414',
+    borderRadius: 18,
+    padding: 18,
+    borderWidth: 1,
+    borderColor: '#2A2A2A',
   },
-  block: {
-    width: '100%',
-  },
-  label: {
-    fontSize: 12,
-    color: '#C4C0CE',
-    marginBottom: 8,
-    marginTop: 2,
-  },
+  cardHead: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 16 },
+  cardTitle: { color: colors.textInverse, fontSize: 16, fontWeight: '700' },
+  label: { fontSize: 11, color: '#8B889B', marginBottom: 6, marginTop: 2 },
   input: {
     backgroundColor: '#2A2A2A',
     borderWidth: 1,
     borderColor: '#3F3F46',
     borderRadius: 12,
     paddingHorizontal: 14,
-    paddingVertical: 13,
-    color: INPUT_TEXT,
-    fontSize: 15,
-    marginBottom: 14,
-    width: '100%',
-    ...inputWeb,
+    paddingVertical: 12,
+    color: colors.textInverse,
+    fontSize: 13,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#2E2E2E',
   },
   phoneRow: {
     flexDirection: 'row',
@@ -374,29 +435,14 @@ const styles = StyleSheet.create({
     borderColor: '#3F3F46',
     borderRadius: 12,
     paddingHorizontal: 14,
-    marginBottom: 16,
-    gap: 10,
-    width: '100%',
+    marginBottom: 14,
+    gap: 8,
+    borderWidth: 1,
+    borderColor: '#2E2E2E',
   },
-  cc: {
-    color: INPUT_TEXT,
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  phoneInput: {
-    flex: 1,
-    minWidth: 0,
-    paddingVertical: 13,
-    color: INPUT_TEXT,
-    fontSize: 15,
-    ...inputWeb,
-  },
-  roles: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 7,
-    marginBottom: 20,
-  },
+  cc: { color: colors.textInverse, fontSize: 13 },
+  phoneInput: { flex: 1, paddingVertical: 12, color: colors.textInverse, fontSize: 13 },
+  roles: { flexDirection: 'row', flexWrap: 'wrap', gap: 7, marginBottom: 16 },
   roleChip: {
     paddingHorizontal: 11,
     paddingVertical: 7,
@@ -404,80 +450,31 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: '#3A3D4A',
   },
-  roleChipOn: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
-  roleText: {
-    fontSize: 11,
-    color: '#C9C6D4',
-  },
-  roleTextOn: {
-    color: colors.primaryInk,
-    fontWeight: '600',
-  },
+  roleChipOn: { backgroundColor: colors.primary, borderColor: colors.primary },
+  roleText: { fontSize: 11, color: '#C9C6D4' },
+  roleTextOn: { color: colors.primaryInk, fontWeight: '600' },
   primaryBtn: {
     backgroundColor: colors.primary,
     borderRadius: 12,
     paddingVertical: 14,
     alignItems: 'center',
-    width: '100%',
+    marginTop: 4,
   },
-  primaryBtnText: {
-    color: colors.primaryInk,
-    fontSize: 15,
-    fontWeight: '700',
-  },
+  primaryBtnText: { color: colors.primaryInk, fontSize: 14, fontWeight: '700' },
   secondaryBtn: {
     borderWidth: 1,
-    borderColor: '#4A4A52',
+    borderColor: '#3A3D4A',
     borderRadius: 12,
     paddingVertical: 13,
     alignItems: 'center',
     marginTop: 4,
     width: '100%',
   },
-  secondaryBtnText: {
-    color: '#F2F0F7',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  orRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    marginVertical: 18,
-  },
-  orLine: {
-    flex: 1,
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: '#3A3D4A',
-  },
-  orText: {
-    fontSize: 11,
-    color: '#A8A5B5',
-  },
-  switchRow: {
-    marginTop: 22,
-    alignItems: 'center',
-  },
-  switchMuted: {
-    fontSize: 13,
-    color: '#A8A5B5',
-  },
-  switchAccent: {
-    color: colors.primary,
-    fontWeight: '700',
-  },
-  hint: {
-    ...typography.micro,
-    color: '#A8A5B5',
-    marginBottom: 12,
-  },
-  error: {
-    marginTop: 16,
-    color: '#E57373',
-    fontSize: 12,
-    textAlign: 'center',
-  },
+  secondaryBtnText: { color: '#C9C6D4', fontSize: 13, fontWeight: '600' },
+  linkBtn: { marginTop: 16, alignItems: 'center' },
+  switchRow: { marginTop: 18, alignItems: 'center' },
+  switchMuted: { fontSize: 12, color: '#5C596A' },
+  switchAccent: { color: colors.primary, fontWeight: '600' },
+  hint: { ...typography.micro, color: '#8B889B', marginBottom: 12 },
+  error: { marginTop: 16, color: '#E57373', fontSize: 12, textAlign: 'center' },
 });

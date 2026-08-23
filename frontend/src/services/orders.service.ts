@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { stockService } from './stock.service';
-import { apiClient, getAccessToken, ApiError } from './apiClient';
+import { apiClient, getAccessToken } from './apiClient';
+import { isApiConfigured } from '../config/runtime';
 
 const ORDERS_KEY = '@buildmart/orders';
 
@@ -39,6 +40,8 @@ export type PlacedOrder = {
   deliveryFee: number;
   total: number;
   etaMinutes: number;
+  latitude?: number;
+  longitude?: number;
   items: PlacedOrderItem[];
   createdAt: string;
   razorpayOrderId?: string;
@@ -53,12 +56,15 @@ export type PlaceOrderInput = {
   pincode: string;
   city: string;
   etaMinutes: number;
+  latitude?: number;
+  longitude?: number;
   paymentMethod: PaymentMethod;
   subtotal: number;
   deliveryFee: number;
   total: number;
   items: {
     productId: string;
+    variantId?: string;
     variantLabel: string;
     quantity: number;
     unitPrice: number;
@@ -80,8 +86,8 @@ async function writeAll(orders: PlacedOrder[]) {
   await AsyncStorage.setItem(ORDERS_KEY, JSON.stringify(orders));
 }
 
-async function hasApiSession() {
-  return !!(await getAccessToken());
+function shouldUseApi(_userId?: string) {
+  return isApiConfigured();
 }
 
 function mapApiOrder(row: Record<string, unknown>): PlacedOrder {
@@ -139,6 +145,24 @@ export const ordersService = {
   },
 
   async getById(orderId: string): Promise<PlacedOrder | null> {
+    if (shouldUseApi() && (await getAccessToken())) {
+      try {
+        const res = await apiClient.get<{ order: Record<string, unknown> }>(
+          `/api/v1/orders/${orderId}`,
+        );
+        if (res.order) {
+          const mapped = mapApiOrder(res.order);
+          const all = await readAll();
+          const idx = all.findIndex((o) => o.id === orderId);
+          if (idx >= 0) all[idx] = mapped;
+          else all.unshift(mapped);
+          await writeAll(all);
+          return mapped;
+        }
+      } catch {
+        /* fall through to local */
+      }
+    }
     const all = await readAll();
     const local = all.find((o) => o.id === orderId);
     if (local) return local;
@@ -184,7 +208,7 @@ export const ordersService = {
       const v = stockService.findVariant(i.productId, i.variantLabel);
       return {
         productId: i.productId,
-        variantId: v?.id ?? 'unknown',
+        variantId: i.variantId || v?.id || i.productId,
         variantLabel: i.variantLabel,
         quantity: i.quantity,
         priceAtPurchase: i.unitPrice,
@@ -209,6 +233,8 @@ export const ordersService = {
           pincode: input.pincode,
           city: input.city,
           etaMinutes: input.etaMinutes,
+          latitude: input.latitude,
+          longitude: input.longitude,
           paymentMethod: input.paymentMethod,
           subtotal: input.subtotal,
           deliveryFee: input.deliveryFee,
@@ -237,6 +263,8 @@ export const ordersService = {
           deliveryFee: input.deliveryFee,
           total: res.order.total,
           etaMinutes: input.etaMinutes,
+          latitude: input.latitude,
+          longitude: input.longitude,
           items,
           createdAt: new Date().toISOString(),
           razorpayOrderId: res.order.razorpay_order_id ?? undefined,

@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -19,6 +19,7 @@ import {
   MapPin,
   QrCode,
   Banknote,
+  Crosshair,
 } from 'lucide-react-native';
 import { useCart } from '../../hooks/useCart';
 import { useAuth } from '../../hooks/useAuth';
@@ -26,6 +27,10 @@ import { useAddress } from '../../hooks/useAddress';
 import { isCodEligible } from '../../services/address.service';
 import { ordersService, type PaymentMethod } from '../../services/orders.service';
 import { paymentsService } from '../../services/payments.service';
+import { ApiError } from '../../services/apiClient';
+import { LocationPermissionError, locationService } from '../../services/location.service';
+import { LocationPermissionCard } from '../../components/location/LocationPermissionCard';
+import { MapPinPicker } from '../../components/location/MapPinPicker';
 import { analytics } from '../../services/analytics.service';
 import { formatPrice } from '../../utils/formatPrice';
 import { colors, spacing } from '../../theme';
@@ -41,12 +46,68 @@ type Props = {
 
 export function CheckoutScreen({ onConfirmed, onChangeAddress }: Props) {
   const { subtotal, deliveryFee, total, count, clear, lines, getProduct } = useCart();
-  const { requireAuth, isAuthenticated, user } = useAuth();
-  const { selected, deliveryStatus } = useAddress();
+  const { requireAuth, isAuthenticated, user, signOut } = useAuth();
+  const { selected, deliveryStatus, upsertAddress } = useAddress();
+  const [locateNote, setLocateNote] = useState('');
   const [method, setMethod] = useState<PaymentMethod>('upi');
   const [itemsOpen, setItemsOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [pendingOrderId, setPendingOrderId] = useState<string | null>(null);
+  const [liveLoc, setLiveLoc] = useState<{
+    latitude: number;
+    longitude: number;
+    label: string;
+  } | null>(null);
+  const [locating, setLocating] = useState(false);
+  const [askLocation, setAskLocation] = useState(false);
+  const [locationBlocked, setLocationBlocked] = useState(false);
+
+  const requestLiveLocation = useCallback(async () => {
+    setLocating(true);
+    setLocateNote('Allow location in the popup…');
+    setAskLocation(true);
+    setLocationBlocked(false);
+    try {
+      const loc = await locationService.detectUserLocation();
+      setLiveLoc({
+        latitude: loc.latitude,
+        longitude: loc.longitude,
+        label: loc.label,
+      });
+      await upsertAddress({
+        id: selected?.id,
+        label: selected?.label ?? 'Site',
+        fullAddress: loc.label,
+        pincode: loc.suggestedPincode ?? selected?.pincode ?? '500032',
+        city: loc.city ?? selected?.city ?? 'Hyderabad',
+        latitude: loc.latitude,
+        longitude: loc.longitude,
+        isDefault: selected?.isDefault ?? true,
+      });
+      setAskLocation(false);
+      setLocationBlocked(false);
+      setLocateNote(locationService.describeLocation(loc));
+    } catch (e) {
+      const denied =
+        e instanceof LocationPermissionError &&
+        (e.status === 'denied' || e.status === 'unavailable');
+      setLocationBlocked(denied);
+      setAskLocation(true);
+      setLocateNote(e instanceof Error ? e.message : 'Could not get live location');
+    } finally {
+      setLocating(false);
+    }
+  }, [selected, upsertAddress]);
+
+  const mapPin =
+    liveLoc ??
+    (selected?.latitude != null && selected.longitude != null
+      ? {
+          latitude: selected.latitude,
+          longitude: selected.longitude,
+          label: selected.fullAddress,
+        }
+      : null);
 
   const codOk = selected ? isCodEligible(selected.pincode) : false;
 
@@ -96,32 +157,24 @@ export function CheckoutScreen({ onConfirmed, onChangeAddress }: Props) {
           pincode: selected.pincode,
           city: selected.city,
           etaMinutes: deliveryStatus.etaMinutes,
+          latitude: liveLoc?.latitude ?? selected.latitude,
+          longitude: liveLoc?.longitude ?? selected.longitude,
           paymentMethod: method,
           subtotal,
           deliveryFee,
           total,
-          items: lineRows.map((l) => ({
-            productId: l.productId,
-            variantLabel: l.variantLabel,
-            quantity: l.quantity,
-            unitPrice: l.unitPrice,
-            title: l.title,
-          })),
+          items: lineRows.map((l) => {
+            const product = getProduct(l.productId);
+            return {
+              productId: l.productId,
+              variantId: product?.defaultVariantId,
+              variantLabel: l.variantLabel || product?.defaultVariantLabel || 'Standard',
+              quantity: l.quantity,
+              unitPrice: l.unitPrice,
+              title: l.title,
+            };
+          }),
         };
-
-        const stockIssues = await ordersService.validateStock(input);
-        if (stockIssues.length) {
-          Alert.alert(
-            'Stock changed',
-            stockIssues
-              .map(
-                (i) =>
-                  `${i.variantLabel}: need ${i.requested}, only ${i.available} left`,
-              )
-              .join('\n'),
-          );
-          return;
-        }
 
         const placed = await ordersService.place(input);
         if (!placed.ok) {
@@ -200,6 +253,17 @@ export function CheckoutScreen({ onConfirmed, onChangeAddress }: Props) {
         Alert.alert(
           'Payment cancelled',
           'Order is pending payment. Tap Place order again to retry, or switch to COD if eligible.',
+        );
+      } catch (err) {
+        const unauthorized = err instanceof ApiError && err.status === 401;
+        if (unauthorized) {
+          await signOut();
+          requireAuth(() => void go());
+          return;
+        }
+        Alert.alert(
+          'Could not place order',
+          err instanceof Error ? err.message : 'Please try again.',
         );
       } finally {
         setBusy(false);
@@ -286,6 +350,50 @@ export function CheckoutScreen({ onConfirmed, onChangeAddress }: Props) {
             <Text style={styles.change}>Change</Text>
           </View>
         </Pressable>
+        <Pressable
+          style={styles.liveBtn}
+          disabled={locating}
+          onPress={() => void requestLiveLocation()}
+        >
+          <Crosshair size={14} color={colors.primaryInk} />
+          <Text style={styles.liveText}>
+            {locating
+              ? 'Waiting for permission…'
+              : liveLoc
+                ? `Live pin: ${liveLoc.label}`
+                : 'Use current location'}
+          </Text>
+        </Pressable>
+        <LocationPermissionCard
+          visible={askLocation}
+          waiting={locating}
+          blocked={locationBlocked}
+          onRetry={() => void requestLiveLocation()}
+        />
+        {locateNote && !askLocation ? <Text style={styles.addrSub}>{locateNote}</Text> : null}
+        {mapPin ? (
+          <MapPinPicker
+            latitude={mapPin.latitude}
+            longitude={mapPin.longitude}
+            onChange={(latitude, longitude) => {
+              void (async () => {
+                const loc = await locationService.reverseGeocode(latitude, longitude);
+                setLiveLoc({ latitude, longitude, label: loc.label });
+                await upsertAddress({
+                  id: selected?.id,
+                  label: selected?.label ?? 'Site',
+                  fullAddress: loc.label,
+                  pincode: loc.suggestedPincode ?? selected?.pincode ?? '500032',
+                  city: loc.city ?? selected?.city ?? 'Hyderabad',
+                  latitude,
+                  longitude,
+                  isDefault: selected?.isDefault ?? true,
+                });
+                setLocateNote(locationService.describeLocation(loc));
+              })();
+            }}
+          />
+        ) : null}
 
         <Pressable
           style={styles.itemsToggle}
@@ -438,8 +546,19 @@ const styles = StyleSheet.create({
   addrSub: { fontSize: 9, color: '#C4C0CE', marginTop: 1 },
   eta: { fontSize: 10, marginTop: 4, fontWeight: '600' },
   ok: { color: colors.success },
-  bad: { color: '#E57373' },
-  change: { fontSize: 10, color: colors.primary },
+  bad: { color: colors.danger },
+  change: { fontSize: 10, color: colors.primaryDark },
+  liveBtn: {
+    marginTop: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: colors.primary,
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+  },
+  liveText: { flex: 1, fontSize: 11, fontWeight: '700', color: colors.primaryInk },
   itemsToggle: {
     flexDirection: 'row',
     justifyContent: 'space-between',

@@ -8,7 +8,7 @@ import React, {
   type PropsWithChildren,
 } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { authService, type AuthUser, type UserRole } from '../services/auth.service';
+import { authService, type AuthUser, type OtpSendResult, type UserRole } from '../services/auth.service';
 import { setAccessToken } from '../services/apiClient';
 
 const STORAGE_KEY = '@buildmart/session';
@@ -23,14 +23,23 @@ type AuthContextValue = {
   openLoginModal: () => void;
   closeLoginModal: () => void;
   requireAuth: (onAuthed?: () => void) => boolean;
-  sendOtp: (phone: string) => Promise<void>;
+  sendOtp: (phone: string) => Promise<OtpSendResult>;
+  sendEmailOtp: (email: string) => Promise<OtpSendResult>;
   verifyOtp: (input: {
     phone: string;
     otp: string;
     fullName?: string;
     role?: UserRole;
   }) => Promise<void>;
-  loginEmail: (email: string, password: string) => Promise<void>;
+  verifyEmailOtp: (input: { email: string; otp: string; fullName?: string; role?: UserRole }) => Promise<void>;
+  register: (input: {
+    username: string;
+    email: string;
+    password: string;
+    fullName: string;
+    role?: UserRole;
+  }) => Promise<{ username: string; email: string; hint?: string }>;
+  loginPassword: (userId: string, password: string) => Promise<void>;
   updateProfile: (patch: Partial<Omit<AuthUser, 'id'>>) => Promise<void>;
   signOut: () => Promise<void>;
 };
@@ -52,12 +61,8 @@ export function AuthProvider({ children }: PropsWithChildren) {
           await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(live));
           return;
         }
-        const raw = await AsyncStorage.getItem(STORAGE_KEY);
-        if (raw) {
-          const stored = JSON.parse(raw) as AuthUser;
-          setUser(stored);
-          if (stored.token) await setAccessToken(stored.token);
-        }
+        await AsyncStorage.removeItem(STORAGE_KEY);
+        await setAccessToken(null);
       } finally {
         setIsLoading(false);
       }
@@ -76,7 +81,11 @@ export function AuthProvider({ children }: PropsWithChildren) {
   }, []);
 
   const sendOtp = useCallback(async (phone: string) => {
-    await authService.sendOtp(phone);
+    return authService.sendOtp(phone);
+  }, []);
+
+  const sendEmailOtp = useCallback(async (email: string) => {
+    return authService.sendEmailOtp(email);
   }, []);
 
   const verifyOtp = useCallback(
@@ -90,9 +99,31 @@ export function AuthProvider({ children }: PropsWithChildren) {
     [persist, pendingAction],
   );
 
-  const loginEmail = useCallback(
-    async (email: string, password: string) => {
-      const next = await authService.loginEmail(email, password);
+  const register = useCallback(
+    async (input: {
+      username: string;
+      email: string;
+      password: string;
+      fullName: string;
+      role?: UserRole;
+    }) => authService.register(input),
+    [],
+  );
+
+  const loginPassword = useCallback(
+    async (userId: string, password: string) => {
+      const next = await authService.loginPassword(userId, password);
+      await persist(next);
+      setLoginModalVisible(false);
+      pendingAction?.();
+      setPendingAction(null);
+    },
+    [persist, pendingAction],
+  );
+
+  const verifyEmailOtp = useCallback(
+    async (input: { email: string; otp: string; fullName?: string; role?: UserRole }) => {
+      const next = await authService.verifyEmailOtp(input);
       await persist(next);
       setLoginModalVisible(false);
       pendingAction?.();
@@ -109,7 +140,9 @@ export function AuthProvider({ children }: PropsWithChildren) {
   const updateProfile = useCallback(
     async (patch: Partial<Omit<AuthUser, 'id'>>) => {
       if (!user) return;
-      await persist({ ...user, ...patch });
+      const next = { ...user, ...patch };
+      if (next.role === 'admin' && user.role !== 'admin') next.role = user.role;
+      await persist(next);
     },
     [persist, user],
   );
@@ -133,7 +166,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
       role: user?.role ?? null,
       isLoading,
       isAuthenticated: !!user,
-      isLiveAuth: authService.isLive,
+      isLiveAuth: true,
       loginModalVisible,
       openLoginModal: () => setLoginModalVisible(true),
       closeLoginModal: () => {
@@ -142,8 +175,11 @@ export function AuthProvider({ children }: PropsWithChildren) {
       },
       requireAuth,
       sendOtp,
+      sendEmailOtp,
       verifyOtp,
-      loginEmail,
+      verifyEmailOtp,
+      register,
+      loginPassword,
       updateProfile,
       signOut,
     }),
@@ -153,8 +189,11 @@ export function AuthProvider({ children }: PropsWithChildren) {
       loginModalVisible,
       requireAuth,
       sendOtp,
+      sendEmailOtp,
       verifyOtp,
-      loginEmail,
+      verifyEmailOtp,
+      register,
+      loginPassword,
       updateProfile,
       signOut,
     ],

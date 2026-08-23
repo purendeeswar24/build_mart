@@ -1,35 +1,24 @@
-import { useWindowDimensions } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
-/** Phone / small tablet / desktop */
-export const BP = {
-  phone: 600,
-  tablet: 1024,
+/** Shared breakpoints — one app for phone and desktop web */
+export const layout = {
+  pageGutterMobile: 16,
+  pageGutterDesktop: 32,
+  contentMaxWidth: 1180,
+  mobileMax: 719,
+  tabletMax: 1099,
 } as const;
 
-export function useLayout() {
-  const { width, height } = useWindowDimensions();
-  const insets = useSafeAreaInsets();
-  const isPhone = width < BP.phone;
-  const isTablet = width >= BP.phone && width < BP.tablet;
-  const isDesktop = width >= BP.tablet;
-  const compact = width < 768;
-  const hPad = isPhone ? 14 : 20;
-  const tabContentH = isPhone ? 52 : 46;
-  const tabBottomPad = insets.bottom;
-  const tabH = tabContentH + tabBottomPad;
+export function gutterFor(width: number) {
+  return width < layout.mobileMax ? layout.pageGutterMobile : layout.pageGutterDesktop;
+}
 
-  return {
-    width,
-    height,
-    insets,
-    isPhone,
-    isTablet,
-    isDesktop,
-    compact,
-    hPad,
-    tabContentH,
-    tabBottomPad,
-    tabH,
-  };
+export function featuredColumns(width: number) {
+  if (width >= 1100) return 4;
+  if (width >= 720) return 3;
+  return 2;
+}
+
+export function categoryColumns(width: number) {
+  if (width >= 1100) return 8;
+  if (width >= 720) return 6;
+  return 4;
 }

@@ -52,7 +52,6 @@ export function CartStack() {
                 screen: 'OrderDetail',
                 params: { orderId },
               } as never);
-              navigation.navigate('Cart');
             }}
             onContinue={() => {
               navigation.getParent()?.navigate('HomeTab' as never);

@@ -9,8 +9,12 @@
     "start": "node dist/index.js",
     "typecheck": "tsc --noEmit",
     "lint": "echo \"No lint configured for backend yet\"",
-    "test": "npm run smoke",
-    "smoke": "ts-node --transpile-only src/scripts/smoke.ts"
+    "test": "npm run test:unit",
+    "test:unit": "ts-node --transpile-only src/services/hire.rules.test.ts",
+    "test:dry": "ts-node --transpile-only src/scripts/hire.dry.ts",
+    "smoke": "ts-node --transpile-only src/scripts/smoke.ts",
+    "migrate": "ts-node --transpile-only src/db/migrate.ts",
+    "seed": "ts-node --transpile-only src/db/seed.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.49.1",
@@ -18,13 +22,17 @@
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "morgan": "^1.10.0",
+    "multer": "^2.2.0",
+    "pg": "^8.23.0",
     "zod": "^3.24.2"
   },
   "devDependencies": {
     "@types/cors": "^2.8.17",
     "@types/express": "^4.17.21",
     "@types/morgan": "^1.9.9",
+    "@types/multer": "^2.2.0",
     "@types/node": "^22.13.10",
+    "@types/pg": "^8.23.1",
     "ts-node-dev": "^2.0.0",
     "typescript": "~5.9.0"
   }

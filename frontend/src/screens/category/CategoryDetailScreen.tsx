@@ -29,12 +29,13 @@ import {
   type FilterFacets,
   type ProductCardModel,
 } from '../../services/products.service';
+import { useLayout } from '../../hooks/useLayout';
 import { colors, radii, spacing, typography } from '../../theme';
 
-const SIDEBAR_W = 96;
-const GRID_PAD = 12;
-const GRID_GAP = 12;
-const PAGE_SIZE = 16;
+const SIDEBAR_W = 88;
+const GRID_PAD = 14;
+const GRID_GAP = 14;
+const PAGE_SIZE = 8;
 
 type Props = {
   title: string;
@@ -51,6 +52,9 @@ export function CategoryDetailScreen({
   onSubcategoryPress,
   onOpenCart,
 }: Props) {
+  const { width, isMobile } = useLayout();
+  const gridCols = isMobile ? 2 : 3;
+  const cardW = (width - SIDEBAR_W - GRID_PAD * 2 - GRID_GAP * (gridCols - 1)) / gridCols;
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [products, setProducts] = useState<ProductCardModel[]>([]);
@@ -224,13 +228,14 @@ export function CategoryDetailScreen({
               onAction={() => void reload()}
             />
           ) : loading ? (
-            <ProductGridSkeleton count={cols * 2} cardWidth={cardW} />
+            <ProductGridSkeleton count={4} cardWidth={cardW} />
           ) : (
             <FlatList
               key={`grid-${cols}`}
               data={products}
               keyExtractor={(item) => item.id}
-              numColumns={cols}
+              key={`grid-${gridCols}`}
+              numColumns={gridCols}
               columnWrapperStyle={styles.gridRow}
               contentContainerStyle={styles.grid}
               initialNumToRender={9}

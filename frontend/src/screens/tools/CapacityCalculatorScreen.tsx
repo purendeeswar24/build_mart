@@ -1,7 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
-  Dimensions,
   FlatList,
   Pressable,
   StyleSheet,
@@ -12,10 +11,10 @@ import {
 import { Droplets } from 'lucide-react-native';
 import { productsService, type ProductCardModel } from '../../services/products.service';
 import { ProductCard } from '../../components/product/ProductCard';
+import { useLayout } from '../../hooks/useLayout';
 import { colors, radii, spacing, typography } from '../../theme';
 
 const LITRES_PER_PERSON_PER_DAY = 142.5;
-const CARD_W = (Dimensions.get('window').width - 32 - 10) / 2;
 
 type Props = {
   onProductPress?: (productId: string) => void;
@@ -23,6 +22,8 @@ type Props = {
 };
 
 export function CapacityCalculatorScreen({ onProductPress, onViewAll }: Props) {
+  const { width } = useLayout();
+  const cardW = (width - 32 - 10) / 2;
   const [people, setPeople] = useState('4');
   const [bufferDays, setBufferDays] = useState('1');
   const [loading, setLoading] = useState(false);
@@ -119,7 +120,7 @@ export function CapacityCalculatorScreen({ onProductPress, onViewAll }: Props) {
           renderItem={({ item }) => (
             <ProductCard
               product={item}
-              width={CARD_W}
+              width={cardW}
               onPress={() => onProductPress?.(item.id)}
             />
           )}

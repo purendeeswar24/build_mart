@@ -3,7 +3,9 @@ import { FlatList, Pressable, StyleSheet, Text, useWindowDimensions, View } from
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChevronLeft } from 'lucide-react-native';
 import { ProductGridSkeleton } from '../../components/layout/Skeleton';
-import { CategoryTile } from '../../components/product/CategoryTile';
+import { CategoryTile, categoryTileSizeFor } from '../../components/product/CategoryTile';
+import { useLayout } from '../../hooks/useLayout';
+import { FadeIn } from '../../components/motion/FadeIn';
 import { productsService, type CatalogCategory } from '../../services/products.service';
 import { colors, radii, typography } from '../../theme';
 
@@ -21,13 +23,10 @@ export function CategoryListScreen({
   onCapacityPress,
   onHomePress,
 }: Props) {
-  const insets = useSafeAreaInsets();
-  const { width } = useWindowDimensions();
-  const isPhone = width < 600;
-  const hPad = isPhone ? 14 : 20;
-  const gap = isPhone ? 8 : 10;
-  const cols = width < 400 ? 3 : 4;
-  const tileSize = (width - hPad * 2 - gap * (cols - 1)) / cols;
+  const { width, gutter, categoryCols } = useLayout();
+  const tileSize = categoryTileSizeFor(width, gutter, categoryCols);
+  const { count } = useCart();
+  const { selected, deliveryStatus } = useAddress();
   const [categories, setCategories] = useState<CatalogCategory[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -75,8 +74,7 @@ export function CategoryListScreen({
         </View>
       </View>
       {loading ? (
-        <View style={{ paddingHorizontal: hPad }}>
-          {listHeader}
+        <View style={{ padding: 16 }}>
           <ProductGridSkeleton count={8} cardWidth={tileSize} />
         </View>
       ) : (
@@ -84,16 +82,29 @@ export function CategoryListScreen({
           data={categories}
           key={cols}
           keyExtractor={(item) => item.id}
-          numColumns={cols}
-          contentContainerStyle={[styles.list, { paddingHorizontal: hPad }]}
-          columnWrapperStyle={[styles.row, { marginBottom: isPhone ? 12 : 14 }]}
-          ListHeaderComponent={listHeader}
+          key={`cats-${categoryCols}`}
+          numColumns={categoryCols}
+          contentContainerStyle={[styles.list, { paddingHorizontal: gutter }]}
+          columnWrapperStyle={styles.row}
+          ListHeaderComponent={
+            <FadeIn>
+              <View style={styles.headerBlock}>
+                <Text style={styles.title}>All categories</Text>
+                <Text style={styles.sub}>{categories.length} departments · tap to browse</Text>
+                {onCapacityPress ? (
+                  <Pressable style={styles.toolBanner} onPress={onCapacityPress}>
+                    <Text style={styles.toolTitle}>Tank capacity calculator</Text>
+                    <Text style={styles.toolSub}>Size a water tank from household need →</Text>
+                  </Pressable>
+                ) : null}
+              </View>
+            </FadeIn>
+          }
           renderItem={({ item }) => (
             <CategoryTile
               category={item}
               compact
               size={tileSize}
-              lightLabel
               onPress={() => onCategoryPress?.(item.id, item.name)}
             />
           )}

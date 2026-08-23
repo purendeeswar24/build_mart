@@ -18,6 +18,8 @@ const placeSchema = z.object({
   pincode: z.string().optional(),
   city: z.string().optional(),
   etaMinutes: z.number().optional(),
+  latitude: z.number().optional(),
+  longitude: z.number().optional(),
   paymentMethod: z.enum(['upi', 'card', 'cod']),
   subtotal: z.number().nonnegative().max(500_000),
   deliveryFee: z.number().nonnegative().max(10_000),
@@ -48,8 +50,8 @@ ordersRouter.get('/', async (req, res, next) => {
 
 ordersRouter.get('/:id', async (req, res, next) => {
   try {
-    if (!req.params.id) throw new AppError('BAD_REQUEST', 'Missing order id', 400);
     const order = await getOrder(req.auth!.sub, req.params.id);
+    if (!order) throw new AppError('NOT_FOUND', 'Order not found.', 404);
     res.json({ order });
   } catch (err) {
     next(err);
@@ -78,6 +80,9 @@ ordersRouter.post('/:id/confirm-payment', async (req, res, next) => {
 
     if (!req.params.id) throw new AppError('BAD_REQUEST', 'Missing order id', 400);
 
+    if (!body.razorpayOrderId || !body.signature) {
+      throw new AppError('PAYMENT_INVALID', 'Payment confirmation requires a verified signature.', 400);
+    }
     const ok = verifyRazorpaySignature({
       razorpayOrderId: body.razorpayOrderId,
       paymentId: body.paymentId,

@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
-  LayoutChangeEvent,
   NativeScrollEvent,
   NativeSyntheticEvent,
   Pressable,
@@ -13,34 +12,23 @@ import {
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { Image } from 'expo-image';
-import { ArrowRight, ClipboardList, Droplets, MapPin, Package, Truck, Zap } from 'lucide-react-native';
+import { ClipboardList, Droplets, Hammer, Package, Truck, Zap } from 'lucide-react-native';
 import { AppHeader } from '../../components/layout/AppHeader';
 import { ProductCard } from '../../components/product/ProductCard';
 import { CategoryTile } from '../../components/product/CategoryTile';
 import { SectionHeader } from '../../components/layout/SectionHeader';
 import { HScroll } from '../../components/layout/HScroll';
 import { productsService, type CatalogCategory, type ProductCardModel } from '../../services/products.service';
+import { hireCategoryLabel, hireService, hireTimeLeft, type HireJobCard } from '../../services/hire.service';
 import { useCart } from '../../hooks/useCart';
 import { useAddress } from '../../hooks/useAddress';
-import { useFeedback } from '../../hooks/useFeedback';
+import { useLayout } from '../../hooks/useLayout';
 import { colors, radii, shadows, typography } from '../../theme';
 import type { ImageSourcePropType } from 'react-native';
 
-const HERO_IMAGE = require('../../../assets/home-page.png');
-const ABOUT_IMAGE = require('../../../assets/about-collage.png');
 const H_PAD = 20;
-const CARD_W = 168;
-const CARD_GAP = 26;
-const WIDE_BP = 768;
-const TANK_SIZES = [
-  { litres: 500, productId: 'p1', variant: '500L', price: 5200 },
-  { litres: 750, productId: 'p16', variant: '750L', price: 5899 },
-  { litres: 1000, productId: 'p1', variant: '1000L', price: 8200 },
-  { litres: 1500, productId: 'p1', variant: '1500L', price: 11200 },
-  { litres: 2000, productId: 'p1', variant: '2000L', price: 14500 },
-] as const;
-
-const HYD_AREAS = ['HITEC City', 'Gachibowli', 'Banjara Hills', 'Secunderabad'] as const;
+const CARD_W = 156;
+const CARD_GAP = 14;
 
 type Props = {
   onSearchPress?: () => void;
@@ -51,7 +39,8 @@ type Props = {
   onCapacityPress?: () => void;
   onCategoriesTab?: () => void;
   onLocationPress?: () => void;
-  onAboutPress?: () => void;
+  onHirePress?: () => void;
+  onHireJobPress?: (jobId: string) => void;
 };
 
 function LocationFooterBadge({
@@ -314,55 +303,24 @@ export function HomeScreen({
   onCapacityPress,
   onCategoriesTab,
   onLocationPress,
-  onAboutPress,
+  onHirePress,
+  onHireJobPress,
 }: Props) {
-  const { width: windowWidth } = useWindowDimensions();
-  const [pageW, setPageW] = useState(windowWidth);
-  const isWide = pageW >= WIDE_BP;
-  const isPhone = pageW < 600;
-  const hPad = isPhone ? 14 : H_PAD;
-  const catSize = isPhone ? 92 : 124;
-  const bannerW = Math.max(pageW - hPad * 2, 240);
-  const featuredCols = pageW >= 900 ? 3 : 2;
-  const featuredW = Math.max(
-    (pageW - hPad * 2 - CARD_GAP * (featuredCols - 1)) / featuredCols,
-    120,
-  );
+  const { width, gutter, featuredCols, cardGap } = useLayout();
+  const bannerW = Math.max(width - gutter * 2, 280);
+  const featuredW = (width - gutter * 2 - cardGap * (featuredCols - 1)) / featuredCols;
   const [bannerIndex, setBannerIndex] = useState(0);
   const bannerRef = useRef<ScrollView>(null);
   const { count, addItem } = useCart();
   const { selected, deliveryStatus } = useAddress();
-  const { showToast, bounceCart } = useFeedback();
-  const boot = productsService.getLocalHomeFeed();
-  const [banners, setBanners] = useState<ImageSourcePropType[]>(boot.banners);
-  const [saleBanner, setSaleBanner] = useState<ImageSourcePropType | null>(boot.saleBanner);
-  const [categories, setCategories] = useState<CatalogCategory[]>(boot.categories);
-  const [trending, setTrending] = useState<ProductCardModel[]>(boot.trending);
-  const [bestSellers, setBestSellers] = useState<ProductCardModel[]>(boot.bestSellers);
-  const [featured, setFeatured] = useState<ProductCardModel[]>(boot.featured);
-  const aboutOffsetY = useRef(0);
-  const headerHRef = useRef(0);
-  const statusLightRef = useRef(false);
-  const headerProgress = useRef(new Animated.Value(0)).current;
-  const [headerSize, setHeaderSize] = useState(0);
-  const [statusLight, setStatusLight] = useState(false);
-  const headerHideStyle = useMemo(
-    () => ({
-      opacity: headerProgress.interpolate({
-        inputRange: [0, 0.7, 1],
-        outputRange: [1, 0.65, 0],
-      }),
-      transform: [
-        {
-          translateY: headerProgress.interpolate({
-            inputRange: [0, 1],
-            outputRange: [0, headerSize > 0 ? -(headerSize + 12) : -108],
-          }),
-        },
-      ],
-    }),
-    [headerProgress, headerSize],
-  );
+  const [loading, setLoading] = useState(true);
+  const [banners, setBanners] = useState<ImageSourcePropType[]>([]);
+  const [saleBanner, setSaleBanner] = useState<ImageSourcePropType | null>(null);
+  const [categories, setCategories] = useState<CatalogCategory[]>([]);
+  const [trending, setTrending] = useState<ProductCardModel[]>([]);
+  const [bestSellers, setBestSellers] = useState<ProductCardModel[]>([]);
+  const [featured, setFeatured] = useState<ProductCardModel[]>([]);
+  const [endingSoon, setEndingSoon] = useState<HireJobCard[]>([]);
 
   useEffect(() => {
     let alive = true;
@@ -374,7 +332,14 @@ export function HomeScreen({
       setTrending(feed.trending);
       setBestSellers(feed.bestSellers);
       setFeatured(feed.featured);
-    });
+      try {
+        const soon = await hireService.endingSoon();
+        if (alive) setEndingSoon(soon.jobs ?? []);
+      } catch {
+        if (alive) setEndingSoon([]);
+      }
+      setLoading(false);
+    })();
     return () => {
       alive = false;
     };
@@ -385,16 +350,16 @@ export function HomeScreen({
     const id = setInterval(() => {
       setBannerIndex((i) => {
         const next = (i + 1) % banners.length;
-        bannerRef.current?.scrollTo({ x: next * (bannerW + H_PAD), animated: true });
+        bannerRef.current?.scrollTo({ x: next * (bannerW + gutter), animated: true });
         return next;
       });
     }, 4200);
     return () => clearInterval(id);
-  }, [banners.length, bannerW]);
+  }, [banners.length, bannerW, gutter]);
 
   const onBannerScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const x = e.nativeEvent.contentOffset.x;
-    setBannerIndex(Math.round(x / (bannerW + H_PAD)));
+    setBannerIndex(Math.round(x / (bannerW + gutter)));
   };
 
   const eta = deliveryStatus?.message?.includes('Delivery')
@@ -493,87 +458,72 @@ export function HomeScreen({
           </View>
         </View>
 
-        <View style={styles.belowHero}>
-          <View style={styles.sectionHead}>
-            <Text style={[styles.sectionTitle, isPhone && styles.sectionTitleCompact]}>Shop by category</Text>
-            <Pressable onPress={openAllCategories} style={[styles.seeAllBtn, isPhone && styles.seeAllBtnCompact]}>
-              <Text style={[styles.seeAll, isPhone && styles.seeAllCompact]}>View all</Text>
-            </Pressable>
-          </View>
-          <HScroll contentContainerStyle={styles.catRow} style={styles.catScroller}>
-            {categories.map((cat) => (
-              <CategoryTile
-                key={cat.id}
-                category={cat}
-                mini
-                compact
-                size={catSize}
-                onPress={() => onCategoryPress?.(cat.id, cat.name)}
-              />
-            ))}
-            <Pressable
-              style={[styles.bookHelpMini, { width: catSize }]}
-              onPress={onCapacityPress}
-              accessibilityRole="button"
-              accessibilityLabel="Tank capacity calculator"
-            >
-              <View style={[styles.bookHelpIconMini, { width: catSize, height: catSize }]}>
-                <Droplets size={isPhone ? 24 : 32} color={colors.primaryInk} />
+          {endingSoon.length > 0 ? (
+            <FadeIn delay={40}>
+              <View style={styles.sectionHead}>
+                <Text style={styles.sectionTitle}>Completing soon</Text>
+                <Pressable onPress={onHirePress}>
+                  <Text style={styles.seeAll}>Open work</Text>
+                </Pressable>
               </View>
-              <Text style={styles.bookHelpLabel}>Tank</Text>
-            </Pressable>
-          </HScroll>
-        </View>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.soonRow}
+              >
+                {endingSoon.map((job) => (
+                  <Pressable
+                    key={job.id}
+                    style={styles.soonCard}
+                    onPress={() => onHireJobPress?.(job.id) ?? onHirePress?.()}
+                  >
+                    <Text style={styles.soonBadge}>CLOSING</Text>
+                    <Text style={styles.soonTitle} numberOfLines={2}>
+                      {job.title}
+                    </Text>
+                    <Text style={styles.soonMeta}>
+                      {hireCategoryLabel(job.category)} · {hireTimeLeft(job.biddingEndsAt)}
+                    </Text>
+                  </Pressable>
+                ))}
+              </ScrollView>
+            </FadeIn>
+          ) : (
+            <FadeIn delay={40}>
+              <Pressable style={styles.hirePromo} onPress={onHirePress}>
+                <View style={styles.howIcon}>
+                  <Hammer size={18} color={colors.primaryInk} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.toolTitle}>Open work / bid</Text>
+                  <Text style={styles.toolSub}>
+                    Builders post work. Companies bid. After accept, talk only through BuildMart.
+                  </Text>
+                </View>
+              </Pressable>
+            </FadeIn>
+          )}
 
-        <AboutSection
-          isWide={isWide}
-          compact={!isWide}
-          hPad={hPad}
-          onReadMore={onAboutPress}
-          onLayout={(e) => {
-            aboutOffsetY.current = e.nativeEvent.layout.y;
-          }}
-        />
-
-        <Section
-          title="Trending products"
-          badge="HOT"
-          products={trending}
-          onProductPress={onProductPress}
-          onOpenCart={onCartPress}
-          onAction={openAllCategories}
-          compact={isPhone}
-        />
-
-        <View>
-          <SectionHeader
-            title="Limited offers"
-            badge="SALE"
-            actionLabel="Shop deals"
-            padded={false}
-            compact={isPhone}
-            onAction={() => onProductPress?.(featured[0]?.id ?? trending[0]?.id ?? '')}
-          />
-          <View style={styles.saleBlock}>
-            {saleBanner ? (
-              <Image
-                source={saleBanner}
-                style={styles.saleImg}
-                contentFit="cover"
-                cachePolicy="memory-disk"
-                transition={0}
-              />
-            ) : null}
-            <View style={styles.saleOverlay}>
-              <Text style={styles.saleEyebrow}>LIMITED SALE</Text>
-              <Text style={[styles.saleTitle, isPhone && styles.saleTitleCompact]}>Get 25% off — tonight only</Text>
-              <Text style={[styles.saleCopy, isPhone && styles.saleCopyCompact]}>
-                Cement, steel, electricals & hardware. Extra 10% off on 5+ bags — 30-min
-                delivery, any quantity.
-              </Text>
-              <View style={styles.salePerks}>
-                <View style={styles.salePerk}>
-                  <Text style={styles.salePerkText}>Free 30-min delivery</Text>
+          <FadeIn delay={80}>
+            <ScrollView
+              ref={bannerRef}
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              onScroll={onBannerScroll}
+              scrollEventThrottle={16}
+              style={styles.bannerScroller}
+              decelerationRate="fast"
+            >
+              {banners.map((src, i) => (
+                <View key={i} style={[styles.bannerSlide, { width: bannerW }]}>
+                  <Image source={src} style={styles.bannerImage} contentFit="cover" />
+                  <View style={styles.bannerOverlay}>
+                    <Text style={styles.bannerEyebrow}>30-MIN DELIVERY</Text>
+                    <Text style={styles.bannerTitle}>
+                      {i === 0 ? 'Site materials, ready when you are' : 'Pipes, paints & hardware'}
+                    </Text>
+                  </View>
                 </View>
                 <View style={styles.salePerk}>
                   <Text style={styles.salePerkText}>Extra 10% on bulk</Text>
@@ -653,15 +603,20 @@ export function HomeScreen({
                 <Text style={styles.toolSub}>Capacity calculator → recommend in-stock sizes</Text>
               </Pressable>
             </View>
-            <Pressable
-              style={styles.toolOrderBtn}
-              onPress={orderTank}
-              accessibilityRole="button"
-              accessibilityLabel="Order 1000 litre tank"
-            >
-              <Text style={styles.toolOrderText}>Order</Text>
-            </Pressable>
-          </View>
+            <View style={[styles.featuredGrid, { paddingHorizontal: gutter, gap: cardGap }]}>
+              {featured.map((p, i) => (
+                <FadeIn key={p.id} delay={i * 50} distance={14}>
+                  <ProductCard
+                    product={p}
+                    width={featuredW}
+                    onPress={() => onProductPress?.(p.id)}
+                    onAddPress={() => onProductPress?.(p.id)}
+                    onOpenCart={onCartPress}
+                  />
+                </FadeIn>
+              ))}
+            </View>
+          </FadeIn>
 
           <LocationFooterBadge
             city={selected?.city ?? 'Hyderabad'}
@@ -759,17 +714,11 @@ function Section({
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.background, overflow: 'hidden' },
-  headerOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 20,
-  },
-  content: { paddingBottom: 48, maxWidth: '100%' },
-  heroWrap: {
-    alignSelf: 'stretch',
+  screen: { flex: 1, backgroundColor: colors.background }, // phone-width canvas + page gutters
+  loader: { flex: 1 },
+  content: { paddingBottom: 48 },
+  hero: {
+    paddingHorizontal: H_PAD,
     paddingTop: 20,
   },
   hero: {
@@ -1281,6 +1230,8 @@ const styles = StyleSheet.create({
   },
   howRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
+    paddingHorizontal: H_PAD,
     gap: 12,
   },
   howRowNarrow: {
@@ -1288,8 +1239,8 @@ const styles = StyleSheet.create({
   },
   howCard: {
     flexGrow: 1,
-    flexBasis: 140,
-    minWidth: 140,
+    flexBasis: 96,
+    minWidth: 96,
     backgroundColor: colors.surface,
     borderRadius: radii.lg,
     borderWidth: 1,
@@ -1320,6 +1271,30 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     textAlign: 'center',
     lineHeight: 20,
+  },
+  soonRow: { paddingHorizontal: H_PAD, gap: 10, paddingBottom: 4 },
+  soonCard: {
+    width: 200,
+    backgroundColor: colors.primaryMuted,
+    borderWidth: 1,
+    borderColor: colors.primary,
+    borderRadius: radii.lg,
+    padding: 12,
+  },
+  soonBadge: { ...typography.micro, color: colors.primaryDark, fontWeight: '800' },
+  soonTitle: { ...typography.label, color: colors.text, marginTop: 6 },
+  soonMeta: { ...typography.caption, color: colors.textSecondary, marginTop: 6 },
+  hirePromo: {
+    marginHorizontal: H_PAD,
+    marginTop: 16,
+    padding: 14,
+    borderRadius: radii.lg,
+    backgroundColor: colors.primaryMuted,
+    borderWidth: 1,
+    borderColor: colors.primary,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
   },
   toolBanner: {
     marginTop: 28,

@@ -1,6 +1,17 @@
+import type { NavigatorScreenParams } from '@react-navigation/native';
+
+export type HireStackParamList = {
+  HireHome: undefined;
+  HireJob: { jobId: string };
+  HireChat: { jobId: string };
+  PostJob: undefined;
+  MyHire: undefined;
+};
+
 export type RootTabParamList = {
   HomeTab: undefined;
   CategoriesTab: undefined;
+  HireTab: NavigatorScreenParams<HireStackParamList> | undefined;
   CartTab: undefined;
   OrdersTab: undefined;
   AccountTab: undefined;

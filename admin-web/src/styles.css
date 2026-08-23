@@ -265,16 +265,51 @@ body {
   animation: heroWashDown 4.4s ease-in-out infinite;
 }
 
-@keyframes heroWashDown {
-  0%,
-  100% {
-    opacity: 0.12;
-    transform: scale(1);
-  }
-  50% {
-    opacity: 0.28;
-    transform: scale(1.08);
-  }
+.sidebar-signout {
+  margin-top: 24px;
+  width: 100%;
+  background: transparent;
+  color: #c9c6d4;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  padding: 9px 12px;
+  cursor: pointer;
+}
+
+.login-shell {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.login-card {
+  width: min(420px, 100%);
+}
+
+.login-card label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 12px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.login-card input {
+  font: inherit;
+  text-transform: none;
+  font-weight: 500;
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+
+.main {
+  padding: 28px 32px;
 }
 
 .hero-eyebrow {
@@ -295,45 +330,208 @@ body {
   color: #ffffff;
 }
 
-.hero-title span {
-  color: #d4a017;
+.warn td {
+  color: inherit;
 }
 
-.hero-sub {
-  margin: 16px 0 0;
-  max-width: 36rem;
-  font-size: 1.05rem;
-  line-height: 1.6;
-  color: rgba(255, 255, 255, 0.82);
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 22px;
 }
 
-.hero-description {
-  margin: 10px 0 0;
-  max-width: 36rem;
-  font-size: 0.95rem;
-  line-height: 1.55;
-  color: rgba(255, 255, 255, 0.68);
+.card h2 {
+  margin: 0 0 14px;
+  font-size: 1.1rem;
 }
 
-.hero-pills {
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px 14px;
+}
+
+.form-grid label {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 20px;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
 }
 
-.hero-pills span {
+.form-grid .span-2 {
+  grid-column: span 2;
+}
+
+.image-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.image-field-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.image-picker {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+}
+
+.image-preview,
+.image-preview.placeholder,
+.table-thumb {
+  width: 88px;
+  height: 88px;
+  border-radius: 10px;
+  object-fit: cover;
+  border: 1px solid var(--line);
+  background: #f3f1ea;
+}
+
+.image-preview.placeholder,
+.table-thumb.placeholder {
+  display: grid;
+  place-items: center;
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.table-thumb {
+  width: 42px;
+  height: 42px;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.image-picker-controls {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.image-picker-controls label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.file-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 2px solid #d4a017;
-  border-radius: 999px;
-  padding: 10px 16px;
-  font-size: 0.85rem;
+  width: fit-content;
+  background: #fff;
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  padding: 9px 12px;
+  cursor: pointer;
+  color: var(--ink);
+  text-transform: none;
+  letter-spacing: 0;
   font-weight: 700;
-  color: #0a0a0a;
-  background: #ffffff;
-  white-space: nowrap;
+}
+
+.file-btn input {
+  display: none;
+}
+
+.item-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.form-grid input,
+.form-grid select,
+.form-grid textarea,
+.table select {
+  font: inherit;
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 500;
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 9px 10px;
+  background: #fff;
+}
+
+.btn {
+  margin-top: 14px;
+  background: var(--amber);
+  color: var(--navy);
+  border: 0;
+  border-radius: 10px;
+  padding: 11px 16px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.btn:disabled {
+  opacity: 0.55;
+}
+
+.btn-danger {
+  background: transparent;
+  border: 1px solid #e2b4b4;
+  color: #9b1c1c;
+  border-radius: 8px;
+  padding: 6px 10px;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.form-error {
+  color: #9b1c1c;
+  margin: 10px 0 0;
+}
+
+.form-ok {
+  color: #0f6b4c;
+  margin: 10px 0 0;
+}
+
+.muted {
+  color: var(--muted);
+  font-size: 0.78rem;
+  margin-top: 3px;
+}
+
+.table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.price-input {
+  width: 7.5rem;
+  max-width: 100%;
+  font: inherit;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 7px 8px;
+  background: #fff;
+}
+
+.sidebar nav {
+  flex-wrap: wrap;
 }
 
 .hero-pills .pill-delivery {
@@ -363,26 +561,79 @@ body {
     flex-wrap: wrap;
   }
 
-  .header-actions {
-    width: 100%;
-    justify-content: space-between;
-    margin-left: 0;
+  .sidebar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px 16px;
+    padding: 16px;
   }
 
-  .header-search {
-    width: min(100%, 260px);
+  .sidebar nav {
+    flex-direction: row;
+    flex-wrap: wrap;
     flex: 1;
+    min-width: 0;
   }
 
-  .hero {
+  .sidebar-signout {
+    margin-top: 0;
+    width: auto;
+  }
+
+  .brand-sub {
+    display: none;
+  }
+
+  .main {
+    padding: 18px 16px 28px;
+    min-width: 0;
+  }
+
+  h1 {
+    font-size: 1.3rem;
+  }
+
+  .stat-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .form-grid {
     grid-template-columns: 1fr;
-    margin: 12px 20px 0;
-    height: auto;
-    min-height: 0;
   }
 
-  .hero-media {
-    min-height: 220px;
-    height: 220px;
+  .form-grid .span-2 {
+    grid-column: span 1;
+  }
+
+  .table {
+    min-width: 720px;
+  }
+
+  .login-card {
+    width: min(420px, calc(100vw - 32px));
+  }
+}
+
+@media (max-width: 560px) {
+  .stat-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .sidebar nav {
+    flex-direction: column;
+  }
+
+  .sidebar-signout {
+    width: 100%;
+  }
+
+  .price-input {
+    width: 6.2rem;
   }
 }

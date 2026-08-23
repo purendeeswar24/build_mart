@@ -20,6 +20,7 @@ const MENU = [
   { key: 'profile', label: 'Edit profile', icon: UserRound },
   { key: 'addresses', label: 'Saved addresses', icon: MapPin },
   { key: 'orders', label: 'Order history', icon: Package },
+  { key: 'hire', label: 'Open work / bids', icon: Briefcase },
   { key: 'wishlist', label: 'Wishlist', icon: Heart },
   { key: 'settings', label: 'Settings', icon: Settings },
   { key: 'support', label: 'Help & support', icon: Headset },
@@ -33,6 +34,7 @@ type Props = {
   onOpenSupport?: () => void;
   onOpenProfileEdit?: () => void;
   onOpenBulkQuote?: () => void;
+  onOpenHire?: () => void;
 };
 
 export function ProfileScreen({
@@ -43,6 +45,7 @@ export function ProfileScreen({
   onOpenSupport,
   onOpenProfileEdit,
   onOpenBulkQuote,
+  onOpenHire,
 }: Props) {
   const { user, isAuthenticated, openLoginModal, signOut } = useAuth();
 
@@ -107,12 +110,15 @@ export function ProfileScreen({
                 if (item.key === 'profile') onOpenProfileEdit?.();
                 if (item.key === 'addresses') onOpenAddresses?.();
                 if (item.key === 'orders') onOpenOrders?.();
+                if (item.key === 'hire') onOpenHire?.();
                 if (item.key === 'wishlist') onOpenWishlist?.();
                 if (item.key === 'settings') onOpenSettings?.();
                 if (item.key === 'support') onOpenSupport?.();
               }}
             >
-              <Icon size={17} color={colors.primaryDark} />
+              <View style={styles.menuIcon}>
+                <Icon size={16} color={colors.primaryInk} strokeWidth={2.3} />
+              </View>
               <Text style={styles.menuLabel}>{item.label}</Text>
               <ChevronRight size={14} color={colors.textMuted} />
             </Pressable>
@@ -218,6 +224,14 @@ const styles = StyleSheet.create({
   },
   loginBtnText: { fontWeight: '800', color: colors.primaryInk, fontSize: 16 },
   menu: { paddingHorizontal: spacing.lg, paddingTop: 8 },
+  menuIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   menuRow: {
     flexDirection: 'row',
     alignItems: 'center',

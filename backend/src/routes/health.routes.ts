@@ -1,20 +1,21 @@
 import { Router } from 'express';
 import { env } from '../config/env';
-import { isSupabaseAdminConfigured } from '../config/supabase';
+import { isDatabaseConfigured, pingDatabase } from '../config/db';
 import { isRazorpayConfigured } from '../config/razorpay';
+import { isEmailConfigured } from '../config/mailer';
 
 export const healthRouter = Router();
 
-healthRouter.get('/health', (_req, res) => {
-  const supabase = isSupabaseAdminConfigured();
-  const razorpay = isRazorpayConfigured();
+healthRouter.get('/health', async (_req, res) => {
+  const databaseConfigured = isDatabaseConfigured();
+  const database = databaseConfigured ? await pingDatabase() : false;
   res.json({
     status: 'ok',
-    env: env.NODE_ENV,
     ready: {
-      supabase,
-      razorpay,
-      production: supabase && razorpay && env.NODE_ENV === 'production',
+      database,
+      razorpay: isRazorpayConfigured(),
+      email: isEmailConfigured(),
     },
+    ...(env.NODE_ENV !== 'production' ? { env: env.NODE_ENV } : {}),
   });
 });

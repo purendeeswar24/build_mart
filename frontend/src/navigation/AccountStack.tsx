@@ -26,6 +26,7 @@ export function AccountStack() {
             onOpenProfileEdit={() => navigation.navigate('ProfileEdit')}
             onOpenBulkQuote={() => navigation.navigate('BulkQuote')}
             onOpenOrders={() => navigation.getParent()?.navigate('OrdersTab' as never)}
+            onOpenHire={() => navigation.getParent()?.navigate('HireTab' as never)}
           />
         )}
       </Stack.Screen>

@@ -105,7 +105,7 @@ export function ProductCard({
       onAddPress?.() ?? onPress?.();
       return;
     }
-    addItem(product.id, 'Default', 1, product.price);
+    addItem(product.id, product.defaultVariantLabel || 'Standard', 1, product.price);
     bounceCart();
     setAddedFlash(true);
     Animated.sequence([

@@ -46,6 +46,14 @@ Desktop.ini
 coverage/
 .nyc_output/
 
+# Uploaded product photos (kept locally / on the API host)
+backend/uploads/*
+!backend/uploads/.gitkeep
+
+# Local stack pids / unused python venv reminder
+.dev-pids.json
+.venv/
+
 # Misc
 *.pem
 .turbo/

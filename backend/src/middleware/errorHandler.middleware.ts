@@ -33,7 +33,15 @@ export function errorHandler(
     return;
   }
 
-  if (err instanceof ZodError) {
+  if (err && typeof err === 'object' && 'code' in err && (err as { code?: string }).code === 'LIMIT_FILE_SIZE') {
+    res.status(400).json({
+      error: { code: 'FILE_TOO_LARGE', message: 'Image must be 5 MB or smaller.' },
+    });
+    return;
+  }
+
+  // Zod validation
+  if (err && typeof err === 'object' && 'issues' in err) {
     const body: ApiErrorBody = {
       error: { code: 'VALIDATION_ERROR', message: 'Invalid request body.' },
     };

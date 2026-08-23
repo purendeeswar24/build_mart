@@ -1,4 +1,6 @@
 import type { ImageSourcePropType } from 'react-native';
+import { env } from '../config/env';
+import { apiClient } from './apiClient';
 import { isSupabaseConfigured, supabase } from './supabaseClient';
 import {
   SEED_BANNERS,
@@ -74,6 +76,84 @@ const PRODUCT_ACCESSORIES: Record<string, string[]> = {
   p1: ['p6'],
   p16: ['p6'],
 };
+
+function resolveMediaImage(url?: string | null, fallback?: ImageSourcePropType): ImageSourcePropType {
+  const trimmed = url?.trim();
+  if (!trimmed) {
+    return fallback ?? require('../../assets/images/placeholders/no-image.jpg');
+  }
+  if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+    return { uri: trimmed };
+  }
+  const base = env.apiBaseUrl.replace(/\/$/, '');
+  const path = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
+  return { uri: `${base}${path}` };
+}
+
+type ApiVariant = {
+  id: string;
+  variant_label: string;
+  attributes?: Record<string, string | number | boolean>;
+  mrp: number | string;
+  selling_price: number | string;
+  stock_qty: number;
+  sku?: string;
+  image_urls?: string[];
+  image_tint?: string | null;
+};
+
+type ApiProduct = {
+  id: string;
+  brand: string;
+  title: string;
+  slug: string;
+  category_id: string;
+  description?: string | null;
+  material?: string | null;
+  warranty_years?: number | null;
+  features?: string[];
+  badge?: string | null;
+  variants: ApiVariant[];
+};
+
+function mapApiVariant(row: ApiVariant, local?: SeedVariant): SeedVariant {
+  return {
+    id: row.id,
+    product_id: local?.product_id ?? row.id,
+    variant_label: row.variant_label,
+    attributes: row.attributes ?? {},
+    mrp: Number(row.mrp),
+    selling_price: Number(row.selling_price),
+    stock_qty: Number(row.stock_qty),
+    sku: row.sku ?? '',
+    image_urls: row.image_urls ?? [],
+    image: resolveMediaImage(row.image_urls?.[0], local?.image),
+    imageTint: row.image_tint ?? local?.imageTint ?? '#E8F1F8',
+  };
+}
+
+function cardFromApiProduct(row: ApiProduct): ProductCardModel | null {
+  const variants = row.variants ?? [];
+  if (!variants.length) return null;
+  const primary = variants[0];
+  const local = SEED_PRODUCTS.find((p) => p.slug === row.slug || p.id === row.id);
+  const localVariant = local ? SEED_VARIANTS.find((v) => v.product_id === local.id) : undefined;
+  return {
+    id: row.id,
+    brand: row.brand,
+    title: row.title,
+    categoryId: row.category_id,
+    mrp: Number(primary.mrp),
+    price: Number(primary.selling_price),
+    image: resolveMediaImage(primary.image_urls?.[0], localVariant?.image),
+    imageTint: primary.image_tint ?? localVariant?.imageTint ?? '#E8F1F8',
+    badge: (row.badge as ProductCardModel['badge']) ?? local?.badge,
+    hasVariants: variants.length > 1,
+    stockQty: Number(primary.stock_qty),
+    defaultVariantId: primary.id,
+    defaultVariantLabel: primary.variant_label,
+  };
+}
 
 function attrLabel(key: string) {
   if (key.includes('capacity') || key.includes('litre')) return 'Capacity';
@@ -241,6 +321,88 @@ function descendantCategoryIds(rootId: string): string[] {
   return ids;
 }
 
+function hydrateCategory(row: {
+  id: string;
+  name: string;
+  slug: string;
+  parent_id: string | null;
+  icon_url: string | null;
+  sort_order: number;
+  short_name?: string | null;
+}): CatalogCategory {
+  const local = SEED_CATEGORIES.find((c) => c.slug === row.slug || c.id === row.id);
+  return {
+    id: row.id,
+    name: row.name,
+    slug: row.slug,
+    parent_id: row.parent_id,
+    icon_url: row.icon_url,
+    sort_order: row.sort_order,
+    shortName: row.short_name ?? local?.shortName ?? row.name.split(' ')[0],
+    image: local?.image ?? require('../../assets/images/placeholders/no-image.jpg'),
+  };
+}
+
+async function tryApiCategories(parentId?: string, topOnly = false): Promise<CatalogCategory[] | null> {
+  try {
+    const qs = parentId ? `parentId=${encodeURIComponent(parentId)}` : topOnly ? 'top=1' : '';
+    const res = await apiClient.get<{ categories: Array<Parameters<typeof hydrateCategory>[0]> }>(
+      `/api/v1/catalog/categories${qs ? `?${qs}` : ''}`,
+      { auth: false },
+    );
+    if (!res.categories?.length) return null;
+    return res.categories.map(hydrateCategory);
+  } catch {
+    return null;
+  }
+}
+
+async function tryApiProductCards(): Promise<ProductCardModel[] | null> {
+  try {
+    const res = await apiClient.get<{ products: ApiProduct[] }>('/api/v1/catalog/products', {
+      auth: false,
+    });
+    if (!res.products?.length) return null;
+    return res.products.map(cardFromApiProduct).filter(Boolean) as ProductCardModel[];
+  } catch {
+    return null;
+  }
+}
+
+async function tryApiProductDetail(productId: string): Promise<ProductDetailModel | null> {
+  try {
+    const res = await apiClient.get<{ product: ApiProduct }>(
+      `/api/v1/catalog/products/${productId}`,
+      { auth: false },
+    );
+    const row = res.product;
+    if (!row) return null;
+    const local = SEED_PRODUCTS.find((p) => p.slug === row.slug || p.id === row.id);
+    const variants = (row.variants ?? []).map((v) => {
+      const localVariant = local
+        ? SEED_VARIANTS.find((sv) => sv.id === v.id || sv.variant_label === v.variant_label)
+        : undefined;
+      return {
+        ...mapApiVariant(v, localVariant),
+        product_id: row.id,
+      };
+    });
+    if (!variants.length) return null;
+    const card = cardFromApiProduct({ ...row, variants: row.variants ?? [] });
+    if (!card) return null;
+    return {
+      ...card,
+      description: row.description ?? local?.description ?? '',
+      material: row.material ?? local?.material,
+      warrantyYears: row.warranty_years ?? local?.warranty_years,
+      features: row.features?.length ? row.features : local?.features ?? [],
+      variants,
+    };
+  } catch {
+    return null;
+  }
+}
+
 async function trySupabaseCategories(): Promise<CatalogCategory[] | null> {
   if (!isSupabaseConfigured || !supabase) return null;
   const { data, error } = await supabase
@@ -355,14 +517,14 @@ export const productsService = {
   getLocalHomeFeed: localHomeFeed,
 
   async getTopCategories(): Promise<CatalogCategory[]> {
-    if (isSupabaseConfigured) {
-      const remote = await withTimeout(trySupabaseCategories(), 600);
-      if (remote) return remote;
-    }
+    const remote = (await tryApiCategories(undefined, true)) ?? (await trySupabaseCategories());
+    if (remote) return remote;
     return SEED_CATEGORIES.filter((c) => !c.parent_id).sort((a, b) => a.sort_order - b.sort_order);
   },
 
   async getSubcategories(parentId: string): Promise<CatalogCategory[]> {
+    const fromApi = await tryApiCategories(parentId);
+    if (fromApi?.length) return fromApi;
     if (isSupabaseConfigured && supabase) {
       const { data } = await supabase
         .from('categories')
@@ -394,16 +556,21 @@ export const productsService = {
     return SEED_CATEGORIES.find((c) => c.id === id || c.slug === id);
   },
 
-  async getHomeFeed(): Promise<HomeFeed> {
-    const local = localHomeFeed();
-    if (!isSupabaseConfigured) return local;
-    const remote = await withTimeout(
-      Promise.all([trySupabaseCategories(), trySupabaseProductCards()]),
-      600,
-    );
-    if (!remote) return local;
-    const [cats, cards] = remote;
-    if (!cards?.length) return local;
+  async getHomeFeed(): Promise<{
+    banners: ImageSourcePropType[];
+    saleBanner: ImageSourcePropType;
+    categories: CatalogCategory[];
+    trending: ProductCardModel[];
+    bestSellers: ProductCardModel[];
+    featured: ProductCardModel[];
+  }> {
+    const categories = (await this.getTopCategories()).slice(0, 8);
+    const remoteCards = (await tryApiProductCards()) ?? (await trySupabaseProductCards());
+    const cards =
+      remoteCards ??
+      ((SEED_PRODUCTS.map(toCard).filter(Boolean) as ProductCardModel[]));
+    const meta = Object.fromEntries(SEED_PRODUCTS.map((p) => [p.id, p]));
+
     return {
       banners: SEED_BANNERS,
       saleBanner: SEED_SALE_BANNER,
@@ -424,6 +591,42 @@ export const productsService = {
   },
 
   async queryProductsPaged(query: ProductQuery = {}): Promise<PagedProducts> {
+    const remote = await tryApiProductCards();
+    if (remote?.length) {
+      let matched = remote;
+      if (query.categoryId) {
+        const ids = descendantCategoryIds(query.categoryId);
+        matched = matched.filter((p) => ids.includes(p.categoryId));
+      }
+      if (query.search?.trim()) {
+        const q = query.search.trim().toLowerCase();
+        matched = matched.filter(
+          (p) => p.title.toLowerCase().includes(q) || p.brand.toLowerCase().includes(q),
+        );
+      }
+      if (query.brands?.length) {
+        matched = matched.filter((p) => query.brands!.includes(p.brand));
+      }
+      if (query.priceMin != null) {
+        matched = matched.filter((p) => p.price >= query.priceMin!);
+      }
+      if (query.priceMax != null) {
+        matched = matched.filter((p) => p.price <= query.priceMax!);
+      }
+      if (query.inStockOnly) {
+        matched = matched.filter((p) => p.stockQty > 0);
+      }
+      const sorted = sortCards(matched, query.sort ?? 'popularity');
+      const offset = query.offset ?? 0;
+      const limit = query.limit ?? sorted.length;
+      const items = sorted.slice(offset, offset + limit);
+      return {
+        items,
+        total: sorted.length,
+        hasMore: offset + items.length < sorted.length,
+      };
+    }
+
     let pool = SEED_PRODUCTS;
     if (query.categoryId) {
       const ids = descendantCategoryIds(query.categoryId);
@@ -486,6 +689,8 @@ export const productsService = {
   },
 
   async getProductDetail(productId: string): Promise<ProductDetailModel | null> {
+    const fromApi = await tryApiProductDetail(productId);
+    if (fromApi) return fromApi;
     const product = SEED_PRODUCTS.find((p) => p.id === productId);
     if (!product) return null;
     const card = toCard(product);
@@ -501,6 +706,13 @@ export const productsService = {
   },
 
   async getSimilarProducts(productId: string): Promise<ProductCardModel[]> {
+    const remote = await tryApiProductCards();
+    if (remote?.length) {
+      const current = remote.find((p) => p.id === productId);
+      return remote
+        .filter((p) => p.id !== productId && (!current || p.categoryId === current.categoryId))
+        .slice(0, 8);
+    }
     const product = SEED_PRODUCTS.find((p) => p.id === productId);
     if (!product) return [];
     return SEED_PRODUCTS.filter(

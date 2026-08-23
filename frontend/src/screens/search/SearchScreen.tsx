@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
-  Dimensions,
   FlatList,
   Pressable,
   ScrollView,
@@ -30,13 +29,15 @@ import {
   type FilterFacets,
   type ProductCardModel,
 } from '../../services/products.service';
+import { useLayout } from '../../hooks/useLayout';
 import { colors, radii, spacing, typography } from '../../theme';
 
 const RECENT_KEY = '@buildmart/recent-searches';
-const CARD_W = (Dimensions.get('window').width - 40 - 16) / 2;
 const PAGE_SIZE = 8;
 
 export function SearchScreen() {
+  const { width, gutter, cardGap, featuredCols } = useLayout();
+  const cardW = (width - gutter * 2 - cardGap * (featuredCols - 1)) / featuredCols;
   const navigation = useNavigation();
   const [query, setQuery] = useState('');
   const [recent, setRecent] = useState<string[]>([]);
@@ -180,12 +181,13 @@ export function SearchScreen() {
           ) : null}
 
           {loading ? (
-            <ProductGridSkeleton count={4} cardWidth={CARD_W} />
+            <ProductGridSkeleton count={4} cardWidth={cardW} />
           ) : (
             <FlatList
               data={results}
               keyExtractor={(item) => item.id}
-              numColumns={2}
+              key={`search-${featuredCols}`}
+              numColumns={featuredCols}
               columnWrapperStyle={styles.row}
               contentContainerStyle={styles.grid}
               initialNumToRender={6}
@@ -228,7 +230,7 @@ export function SearchScreen() {
               renderItem={({ item }) => (
                 <ProductCard
                   product={item}
-                  width={CARD_W}
+                  width={cardW}
                   onPress={() => openProduct(item.id)}
                 />
               )}

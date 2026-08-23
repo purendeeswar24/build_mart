@@ -6,7 +6,7 @@ import {
   type BottomTabBarProps,
 } from '@react-navigation/bottom-tabs';
 import { getFocusedRouteNameFromRoute } from '@react-navigation/native';
-import { Grid3x3, Home, Info, Package, ShoppingCart, User } from 'lucide-react-native';
+import { House, LayoutGrid, Hammer, ShoppingBag, ClipboardList, CircleUser } from 'lucide-react-native';
 import { TabBarIcon } from '../components/layout/TabBarIcon';
 import { FloatingCart } from '../components/feedback/FloatingCart';
 import { ToastHost } from '../components/feedback/ToastHost';
@@ -16,6 +16,7 @@ import { useLayout } from '../theme/layout';
 import { AccountStack } from './AccountStack';
 import { CartStack } from './CartStack';
 import { CategoriesStack } from './CategoriesStack';
+import { HireStack } from './HireStack';
 import { HomeStack } from './HomeStack';
 import { OrdersStack } from './OrdersStack';
 import { AboutScreen } from '../screens/about/AboutScreen';
@@ -74,115 +75,111 @@ export function MainTabs() {
           tabBarActiveTintColor: colors.primaryDark,
           tabBarInactiveTintColor: '#6B8799',
           tabBarStyle: {
-            backgroundColor: '#E8EAED',
-            borderTopColor: '#D0D4DA',
-            height: tabH,
-            paddingBottom: tabBottomPad,
-            paddingTop: 0,
-          },
-          tabBarItemStyle: {
-            height: tabContentH,
-            paddingTop: isPhone ? 6 : 4,
-            paddingBottom: isPhone ? 4 : 4,
-          },
-          tabBarIconStyle: {
-            marginTop: 0,
-            marginBottom: 0,
+            backgroundColor: colors.surface,
+            borderTopColor: colors.border,
+            height: 64,
+            paddingBottom: 8,
+            paddingTop: 4,
+            paddingHorizontal: 2,
           },
           tabBarLabelStyle: {
-            fontSize: isPhone ? 9 : 10,
+            fontSize: 10,
             fontWeight: '600',
             lineHeight: 12,
             marginTop: 1,
             marginBottom: 0,
             padding: 0,
           },
-          tabBarAllowFontScaling: false,
+          tabBarItemStyle: {
+            minWidth: 0,
+            paddingHorizontal: 0,
+          },
         }}
       >
-        <Tab.Screen
-          name="HomeTab"
-          options={{
-            title: 'Home',
-            tabBarIcon: ({ color, focused }) => (
-              <TabBarIcon icon={Home} color={color} focused={focused} size={isPhone ? 20 : 18} />
-            ),
-          }}
-        >
-          {({ navigation }) => (
-            <HomeStack
-              onOpenCart={() => navigation.navigate('CartTab')}
-              onOpenAccount={() => navigation.navigate('AccountTab')}
-              onOpenAbout={() => navigation.navigate('AboutTab')}
-            />
-          )}
-        </Tab.Screen>
+      <Tab.Screen
+        name="HomeTab"
+        options={{
+          title: 'Home',
+          tabBarIcon: ({ color, focused }) => (
+            <TabBarIcon icon={House} color={color} focused={focused} />
+          ),
+        }}
+      >
+        {({ navigation }) => (
+          <HomeStack
+            onOpenCart={() => navigation.navigate('CartTab')}
+            onOpenAccount={() => navigation.navigate('AccountTab')}
+            onHirePress={() => navigation.navigate('HireTab')}
+            onHireJobPress={(jobId) =>
+              navigation.navigate('HireTab', { screen: 'HireJob', params: { jobId } })
+            }
+          />
+        )}
+      </Tab.Screen>
 
-        <Tab.Screen
-          name="AboutTab"
-          component={AboutScreen}
-          options={{
-            title: 'About',
-            headerShown: false,
-            tabBarIcon: ({ color, focused }) => (
-              <TabBarIcon icon={Info} color={color} focused={focused} size={isPhone ? 20 : 18} />
-            ),
-          }}
-        />
+      <Tab.Screen
+        name="CategoriesTab"
+        options={{
+          title: 'Categories',
+          tabBarIcon: ({ color, focused }) => (
+            <TabBarIcon icon={LayoutGrid} color={color} focused={focused} />
+          ),
+        }}
+      >
+        {({ navigation }) => (
+          <CategoriesStack
+            onOpenCart={() => navigation.navigate('CartTab')}
+            onOpenAccount={() => navigation.navigate('AccountTab')}
+          />
+        )}
+      </Tab.Screen>
 
-        <Tab.Screen
-          name="CategoriesTab"
-          options={{
-            title: 'Categories',
-            headerShown: false,
-            tabBarIcon: ({ color, focused }) => (
-              <TabBarIcon icon={Grid3x3} color={color} focused={focused} size={isPhone ? 20 : 18} />
-            ),
-          }}
-        >
-          {({ navigation }) => (
-            <CategoriesStack
-              onOpenCart={() => navigation.navigate('CartTab')}
-              onOpenAccount={() => navigation.navigate('AccountTab')}
-            />
-          )}
-        </Tab.Screen>
+      <Tab.Screen
+        name="HireTab"
+        component={HireStack}
+        options={{
+          title: 'Work',
+          tabBarIcon: ({ color, focused }) => (
+            <TabBarIcon icon={Hammer} color={color} focused={focused} />
+          ),
+        }}
+      />
 
-        <Tab.Screen
-          name="CartTab"
-          component={CartStack}
-          options={{
-            title: 'Cart',
-            tabBarBadge: count > 0 ? count : undefined,
-            tabBarBadgeStyle: { backgroundColor: colors.primary, color: colors.primaryInk },
-            tabBarIcon: ({ color, focused }) => (
-              <TabBarIcon icon={ShoppingCart} color={color} focused={focused} size={isPhone ? 20 : 18} />
-            ),
-          }}
-        />
+      <Tab.Screen
+        name="CartTab"
+        component={CartStack}
+        options={{
+          title: 'Cart',
+          tabBarBadge: count > 0 ? count : undefined,
+          tabBarBadgeStyle: { backgroundColor: colors.primary, color: colors.primaryInk },
+          tabBarIcon: ({ color, focused }) => (
+            <TabBarIcon icon={ShoppingBag} color={color} focused={focused} />
+          ),
+        }}
+      />
 
-        <Tab.Screen
-          name="OrdersTab"
-          component={OrdersStack}
-          options={{
-            title: 'Orders',
-            tabBarIcon: ({ color, focused }) => (
-              <TabBarIcon icon={Package} color={color} focused={focused} size={isPhone ? 20 : 18} />
-            ),
-          }}
-        />
+      <Tab.Screen
+        name="OrdersTab"
+        component={OrdersStack}
+        options={{
+          title: 'Orders',
+          tabBarIcon: ({ color, focused }) => (
+            <TabBarIcon icon={ClipboardList} color={color} focused={focused} />
+          ),
+        }}
+      />
 
-        <Tab.Screen
-          name="AccountTab"
-          component={AccountStack}
-          options={{
-            title: 'Account',
-            tabBarIcon: ({ color, focused }) => (
-              <TabBarIcon icon={User} color={color} focused={focused} size={isPhone ? 20 : 18} />
-            ),
-          }}
-        />
-      </Tab.Navigator>
+      <Tab.Screen
+        name="AccountTab"
+        component={AccountStack}
+        options={{
+          title: 'Account',
+          tabBarIcon: ({ color, focused }) => (
+            <TabBarIcon icon={CircleUser} color={color} focused={focused} />
+          ),
+        }}
+      />
+    </Tab.Navigator>
       <ToastHost />
     </View>
   );

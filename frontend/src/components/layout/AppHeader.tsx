@@ -1,8 +1,9 @@
 import React, { useEffect, useRef } from 'react';
 import { Animated, Pressable, StyleSheet, Text, TextInput, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Search, ShoppingCart, User } from 'lucide-react-native';
-import { colors, typography } from '../../theme';
+import { Bolt, MapPin, Search, ShoppingBag, CircleUser } from 'lucide-react-native';
+import { useLayout } from '../../hooks/useLayout';
+import { colors, radii, typography } from '../../theme';
 
 type Props = {
   city?: string;
@@ -25,8 +26,7 @@ export function AppHeader({
   variant = 'light',
 }: Props) {
   const insets = useSafeAreaInsets();
-  const { width } = useWindowDimensions();
-  const compact = width < 768;
+  const { gutter } = useLayout();
   const isDark = variant === 'dark';
   const badgeScale = useRef(new Animated.Value(1)).current;
   const prevCount = useRef(cartCount);
@@ -70,11 +70,7 @@ export function AppHeader({
       style={[
         styles.wrapper,
         isDark ? styles.wrapperDark : styles.wrapperLight,
-        {
-          paddingTop: insets.top + (compact ? 8 : 12),
-          paddingBottom: compact ? 8 : 12,
-          paddingHorizontal: compact ? 14 : 20,
-        },
+        { paddingTop: insets.top + 10, paddingHorizontal: gutter },
       ]}
     >
       <View style={styles.topRow}>
@@ -91,10 +87,9 @@ export function AppHeader({
             accessibilityRole="button"
             accessibilityLabel={`Cart, ${cartCount} items`}
             onPress={onCartPress}
-            style={styles.actionBtn}
+            style={[styles.actionBtn, isDark ? styles.actionBtnDark : styles.actionBtnLight]}
           >
-            <ShoppingCart size={22} color={isDark ? '#FFFFFF' : '#0A0A0A'} />
-            <Text style={[styles.actionLabel, isDark && styles.actionLabelDark]}>Cart</Text>
+            <ShoppingBag size={18} color={isDark ? colors.textInverse : colors.text} />
             {cartCount > 0 ? (
               <Animated.View style={[styles.badge, { transform: [{ scale: badgeScale }] }]}>
                 <Text style={styles.badgeText}>{cartCount > 9 ? '9+' : cartCount}</Text>
@@ -106,12 +101,9 @@ export function AppHeader({
             accessibilityRole="button"
             accessibilityLabel="Account"
             onPress={onProfilePress}
-            style={styles.actionBtn}
+            style={[styles.actionBtn, isDark ? styles.actionBtnDark : styles.actionBtnLight]}
           >
-            <View style={[styles.avatar, isDark && styles.avatarDark]}>
-              <User size={16} color={isDark ? '#FFFFFF' : '#0A0A0A'} />
-            </View>
-            <Text style={[styles.actionLabel, isDark && styles.actionLabelDark]}>User</Text>
+            <CircleUser size={18} color={isDark ? colors.textInverse : colors.text} />
           </Pressable>
         </View>
       </View>
@@ -122,10 +114,8 @@ export function AppHeader({
 
 const styles = StyleSheet.create({
   wrapper: {
-    paddingBottom: 12,
-    gap: 10,
-    backgroundColor: '#E8EAED',
-    overflow: 'hidden',
+    paddingBottom: 14,
+    gap: 12,
   },
   wrapperDark: {
     backgroundColor: colors.secondary,
@@ -165,56 +155,24 @@ const styles = StyleSheet.create({
   },
   actions: {
     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    gap: 12,
-    marginLeft: 8,
-    flexShrink: 0,
-  },
-  actionsCompact: {
-    marginLeft: 0,
     gap: 8,
-  },
-  searchPress: {
-    flexGrow: 1,
-    flexShrink: 1,
-    minWidth: 120,
-    maxWidth: 420,
-  },
-  searchPressCompact: {
-    maxWidth: '100%',
-    minWidth: 0,
-    width: '100%',
-  },
-  search: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    width: '100%',
-    backgroundColor: '#F4F6F8',
-    borderRadius: 16,
-    paddingHorizontal: 14,
-    minHeight: 44,
-    gap: 10,
-    borderWidth: 1,
-    borderColor: '#D9DEE4',
-  },
-  searchDark: {
-    backgroundColor: colors.secondaryMuted,
-    borderColor: colors.secondaryMuted,
-  },
-  searchInput: {
-    flex: 1,
-    ...typography.body,
-    fontWeight: '400',
-    color: '#3D5A6C',
-    paddingVertical: 10,
   },
   actionBtn: {
     alignItems: 'center',
-    minWidth: 44,
-    minHeight: 44,
     justifyContent: 'center',
+    minWidth: 40,
+    height: 40,
+    borderRadius: 20,
     position: 'relative',
+    paddingHorizontal: 8,
+  },
+  actionBtnLight: {
+    backgroundColor: colors.background,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  actionBtnDark: {
+    backgroundColor: colors.secondaryMuted,
   },
   actionLabel: {
     ...typography.micro,
