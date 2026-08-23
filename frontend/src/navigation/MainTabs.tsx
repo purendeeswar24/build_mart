@@ -12,12 +12,14 @@ import { FloatingCart } from '../components/feedback/FloatingCart';
 import { ToastHost } from '../components/feedback/ToastHost';
 import { useCart } from '../hooks/useCart';
 import { colors } from '../theme';
+import { useLayout } from '../theme/layout';
 import { AccountStack } from './AccountStack';
 import { CartStack } from './CartStack';
 import { CategoriesStack } from './CategoriesStack';
 import { HireStack } from './HireStack';
 import { HomeStack } from './HomeStack';
 import { OrdersStack } from './OrdersStack';
+import { AboutScreen } from '../screens/about/AboutScreen';
 import type { RootTabParamList } from './types';
 
 const Tab = createBottomTabNavigator<RootTabParamList>();
@@ -31,7 +33,7 @@ const HIDE_FLOAT_ROUTES = new Set([
   'PaymentResult',
 ]);
 
-function FloatingCartLayer({ navigation, state }: BottomTabBarProps) {
+function FloatingCartLayer({ navigation, state, tabH }: BottomTabBarProps & { tabH: number }) {
   const route = state.routes[state.index];
   const nested = getFocusedRouteNameFromRoute(route) ?? route.name;
   const hide =
@@ -40,16 +42,20 @@ function FloatingCartLayer({ navigation, state }: BottomTabBarProps) {
   if (hide) return null;
 
   return (
-    <View pointerEvents="box-none" style={{ position: 'absolute', left: 0, right: 0, bottom: 64, zIndex: 50 }}>
+    <View
+      pointerEvents="box-none"
+      style={{ position: 'absolute', left: 0, right: 0, bottom: tabH, zIndex: 900 }}
+    >
       <FloatingCart onPress={() => navigation.navigate('CartTab')} />
     </View>
   );
 }
 
 function AppTabBar(props: BottomTabBarProps) {
+  const { tabH } = useLayout();
   return (
     <>
-      <FloatingCartLayer {...props} />
+      <FloatingCartLayer {...props} tabH={tabH} />
       <BottomTabBar {...props} />
     </>
   );
@@ -57,15 +63,17 @@ function AppTabBar(props: BottomTabBarProps) {
 
 export function MainTabs() {
   const { count } = useCart();
+  const { isPhone, tabH, tabBottomPad, tabContentH } = useLayout();
 
   return (
-    <View style={{ flex: 1 }}>
+    <View style={{ flex: 1, backgroundColor: colors.secondary }}>
       <Tab.Navigator
         tabBar={(props) => <AppTabBar {...props} />}
         screenOptions={{
           headerShown: false,
+          tabBarHideOnKeyboard: true,
           tabBarActiveTintColor: colors.primaryDark,
-          tabBarInactiveTintColor: colors.textSecondary,
+          tabBarInactiveTintColor: '#6B8799',
           tabBarStyle: {
             backgroundColor: colors.surface,
             borderTopColor: colors.border,
@@ -77,6 +85,10 @@ export function MainTabs() {
           tabBarLabelStyle: {
             fontSize: 10,
             fontWeight: '600',
+            lineHeight: 12,
+            marginTop: 1,
+            marginBottom: 0,
+            padding: 0,
           },
           tabBarItemStyle: {
             minWidth: 0,

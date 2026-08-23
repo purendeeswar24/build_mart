@@ -5,7 +5,7 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/branding/app-icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "dark",
     "scheme": "buildmart",
     "splash": {
       "image": "./assets/images/branding/splash.png",
@@ -36,7 +36,12 @@
       "playStoreUrl": "https://play.google.com/store/apps/details?id=com.buildmart.app"
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/favicon.png",
+      "name": "BuildMart",
+      "shortName": "BuildMart",
+      "themeColor": "#0A0A0A",
+      "backgroundColor": "#0A0A0A",
+      "display": "standalone"
     },
     "plugins": [
       "expo-image",

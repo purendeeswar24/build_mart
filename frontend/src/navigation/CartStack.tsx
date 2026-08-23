@@ -6,13 +6,14 @@ import { OrderConfirmationScreen } from '../screens/cart/OrderConfirmationScreen
 import { AddressListScreen } from '../screens/account/AddressListScreen';
 import { AddressEditScreen } from '../screens/account/AddressEditScreen';
 import type { CartStackParamList } from './types';
+import { withHomeBack } from './screenOptions';
 
 const Stack = createNativeStackNavigator<CartStackParamList>();
 
 export function CartStack() {
   return (
-    <Stack.Navigator>
-      <Stack.Screen name="Cart" options={{ headerShown: false }}>
+    <Stack.Navigator screenOptions={({ navigation }) => withHomeBack(navigation, { dark: true })}>
+      <Stack.Screen name="Cart" options={{ title: 'Cart' }}>
         {({ navigation }) => (
           <CartScreen
             onCheckout={() => navigation.navigate('Checkout')}
@@ -25,8 +26,6 @@ export function CartStack() {
         name="Checkout"
         options={{
           title: 'Checkout',
-          headerShadowVisible: false,
-          headerStyle: { backgroundColor: '#E8F1F8' },
         }}
       >
         {({ navigation }) => (
@@ -42,9 +41,6 @@ export function CartStack() {
         name="OrderConfirmation"
         options={{
           title: 'Order placed',
-          headerShadowVisible: false,
-          headerBackVisible: false,
-          headerStyle: { backgroundColor: '#E8F1F8' },
         }}
       >
         {({ route, navigation }) => (
@@ -68,8 +64,6 @@ export function CartStack() {
         name="Addresses"
         options={{
           title: 'Addresses',
-          headerShadowVisible: false,
-          headerStyle: { backgroundColor: '#E8F1F8' },
         }}
       >
         {({ navigation }) => (
@@ -84,8 +78,6 @@ export function CartStack() {
         name="AddressEdit"
         options={{
           title: 'Edit address',
-          headerShadowVisible: false,
-          headerStyle: { backgroundColor: '#E8F1F8' },
         }}
       >
         {({ route, navigation }) => (

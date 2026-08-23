@@ -474,7 +474,48 @@ async function trySupabaseProductCards(): Promise<ProductCardModel[] | null> {
     .filter(Boolean) as ProductCardModel[];
 }
 
+type HomeFeed = {
+  banners: ImageSourcePropType[];
+  saleBanner: ImageSourcePropType;
+  categories: CatalogCategory[];
+  trending: ProductCardModel[];
+  bestSellers: ProductCardModel[];
+  featured: ProductCardModel[];
+};
+
+function buildLocalHomeFeed(): HomeFeed {
+  const categories = SEED_CATEGORIES.filter((c) => !c.parent_id).sort(
+    (a, b) => a.sort_order - b.sort_order,
+  ).slice(0, 8);
+  const cards = SEED_PRODUCTS.map(toCard).filter(Boolean) as ProductCardModel[];
+  const meta = Object.fromEntries(SEED_PRODUCTS.map((p) => [p.id, p]));
+  return {
+    banners: SEED_BANNERS,
+    saleBanner: SEED_SALE_BANNER,
+    categories,
+    trending: cards.filter((c) => meta[c.id]?.trending).slice(0, 16),
+    bestSellers: cards.filter((c) => meta[c.id]?.bestseller).slice(0, 8),
+    featured: cards.filter((c) => meta[c.id]?.featured).slice(0, 9),
+  };
+}
+
+let localFeedCache: HomeFeed | null = null;
+
+function localHomeFeed(): HomeFeed {
+  localFeedCache ??= buildLocalHomeFeed();
+  return localFeedCache;
+}
+
+async function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T | null> {
+  return Promise.race([
+    promise.catch(() => null),
+    new Promise<null>((resolve) => setTimeout(() => resolve(null), ms)),
+  ]);
+}
+
 export const productsService = {
+  getLocalHomeFeed: localHomeFeed,
+
   async getTopCategories(): Promise<CatalogCategory[]> {
     const remote = (await tryApiCategories(undefined, true)) ?? (await trySupabaseCategories());
     if (remote) return remote;
@@ -533,16 +574,10 @@ export const productsService = {
     return {
       banners: SEED_BANNERS,
       saleBanner: SEED_SALE_BANNER,
-      categories,
-      trending: remoteCards
-        ? cards.slice(0, 8)
-        : cards.filter((c) => meta[c.id]?.trending).slice(0, 8),
-      bestSellers: remoteCards
-        ? cards.slice(0, 8)
-        : cards.filter((c) => meta[c.id]?.bestseller).slice(0, 8),
-      featured: remoteCards
-        ? cards.slice(0, 8)
-        : cards.filter((c) => meta[c.id]?.featured).slice(0, 8),
+      categories: (cats ?? local.categories).slice(0, 8),
+      trending: cards.slice(0, 16),
+      bestSellers: cards.slice(0, 8),
+      featured: cards.slice(0, 9),
     };
   },
 

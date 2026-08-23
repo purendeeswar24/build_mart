@@ -145,13 +145,20 @@ export function ProductCard({
             : {})}
         >
           <View
-            style={[styles.imageWrap, { backgroundColor: product.imageTint || colors.surfaceMuted }]}
+            style={[
+              styles.imageWrap,
+              {
+                backgroundColor: product.imageTint || colors.surfaceMuted,
+                height: Math.min(140, Math.round(width * 0.72)),
+              },
+            ]}
           >
             <SafeImage
               source={product.image}
               style={styles.image}
               contentFit="cover"
-              transition={280}
+              transition={0}
+              recyclingKey={product.id}
               fallbackTint={product.imageTint}
             />
             <View style={styles.badge}>
@@ -213,7 +220,6 @@ const styles = StyleSheet.create({
     borderRadius: radii.lg,
     borderWidth: 1,
     borderColor: colors.border,
-    overflow: 'hidden',
     position: 'relative',
     ...shadows.card,
   },
@@ -224,6 +230,9 @@ const styles = StyleSheet.create({
   imageWrap: {
     height: 120,
     position: 'relative',
+    overflow: 'hidden',
+    borderTopLeftRadius: radii.lg,
+    borderTopRightRadius: radii.lg,
   },
   image: {
     width: '100%',
@@ -255,7 +264,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: 'rgba(255,255,255,0.95)',
+    backgroundColor: 'rgba(26, 26, 26, 0.92)',
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 2,
@@ -263,7 +272,8 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   body: {
-    padding: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
     gap: 6,
     minHeight: 108,
     justifyContent: 'space-between',
@@ -275,11 +285,13 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontWeight: '600',
     minHeight: 32,
+    paddingRight: 4,
   },
   priceRow: {
     flexDirection: 'row',
     alignItems: 'baseline',
     gap: 6,
+    paddingRight: 4,
   },
   price: {
     fontSize: 14,
@@ -292,17 +304,19 @@ const styles = StyleSheet.create({
     textDecorationLine: 'line-through',
   },
   cta: {
-    marginTop: 2,
-    borderRadius: radii.sm,
-    paddingVertical: 9,
+    marginTop: 4,
+    borderRadius: radii.md,
+    paddingVertical: 13,
+    minHeight: 44,
     alignItems: 'center',
+    justifyContent: 'center',
     backgroundColor: colors.primary,
   },
   ctaSuccess: {
     backgroundColor: colors.success,
   },
   ctaText: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '800',
     color: colors.primaryInk,
   },

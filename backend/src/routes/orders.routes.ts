@@ -21,9 +21,9 @@ const placeSchema = z.object({
   latitude: z.number().optional(),
   longitude: z.number().optional(),
   paymentMethod: z.enum(['upi', 'card', 'cod']),
-  subtotal: z.number().nonnegative(),
-  deliveryFee: z.number().nonnegative(),
-  total: z.number().nonnegative(),
+  subtotal: z.number().nonnegative().max(500_000),
+  deliveryFee: z.number().nonnegative().max(10_000),
+  total: z.number().nonnegative().max(500_000),
   items: z
     .array(
       z.object({
@@ -73,8 +73,8 @@ ordersRouter.post('/:id/confirm-payment', async (req, res, next) => {
     const body = z
       .object({
         paymentId: z.string().min(1),
-        razorpayOrderId: z.string().optional(),
-        signature: z.string().optional(),
+        razorpayOrderId: z.string().min(1),
+        signature: z.string().min(1),
       })
       .parse(req.body);
 

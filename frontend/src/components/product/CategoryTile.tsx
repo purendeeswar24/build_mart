@@ -52,6 +52,7 @@ type Props = {
   compact?: boolean;
   size?: number;
   mini?: boolean;
+  lightLabel?: boolean;
 };
 
 export function CategoryTile({
@@ -61,6 +62,7 @@ export function CategoryTile({
   compact = false,
   size,
   mini = false,
+  lightLabel = false,
 }: Props) {
   const { width, gutter } = useLayout();
   const dim = size ?? (mini ? 76 : categoryTileSizeFor(width, gutter));
@@ -78,7 +80,7 @@ export function CategoryTile({
       onPressOut={() =>
         Animated.spring(scale, { toValue: 1, useNativeDriver: true, speed: 20, bounciness: 6 }).start()
       }
-      style={[{ width: dim, alignItems: 'center', gap: mini ? 4 : 6 }, style]}
+      style={[{ width: dim, alignItems: 'center', gap: mini ? 6 : 6 }, style]}
     >
       <Animated.View
         style={[
@@ -92,13 +94,17 @@ export function CategoryTile({
           source={category.image}
           style={{ width: '100%', height: '100%', borderRadius: mini ? radii.md : radii.lg }}
           contentFit="cover"
-          transition={220}
+          transition={0}
+          recyclingKey={category.id}
         />
         <View style={[styles.iconBadge, mini && styles.iconBadgeMini]}>
           <Icon size={mini ? 12 : 14} color={colors.primaryInk} strokeWidth={2.4} />
         </View>
       </Animated.View>
-      <Text style={[styles.label, mini && styles.labelMini]} numberOfLines={2}>
+      <Text
+        style={[styles.label, mini && styles.labelMini, lightLabel && styles.labelLight]}
+        numberOfLines={2}
+      >
         {compact || mini ? category.shortName : category.name}
       </Text>
     </Pressable>
@@ -150,7 +156,10 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   labelMini: {
-    fontSize: 9,
-    lineHeight: 11,
+    fontSize: 12,
+    lineHeight: 15,
+  },
+  labelLight: {
+    color: colors.textInverse,
   },
 });

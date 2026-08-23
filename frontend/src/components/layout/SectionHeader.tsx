@@ -7,6 +7,8 @@ type Props = PropsWithChildren<{
   actionLabel?: string;
   badge?: string;
   onAction?: () => void;
+  padded?: boolean;
+  compact?: boolean;
 }>;
 
 /** Section title with optional pulsing badge for offers / trending */
@@ -15,6 +17,8 @@ export function SectionHeader({
   actionLabel = 'View all',
   badge,
   onAction,
+  padded = true,
+  compact = false,
   children,
 }: Props) {
   const pulse = useRef(new Animated.Value(1)).current;
@@ -55,7 +59,7 @@ export function SectionHeader({
   }, [badge, glow, pulse]);
 
   return (
-    <View style={styles.wrap}>
+    <View style={[styles.wrap, !padded && styles.wrapFlush]}>
       <View style={styles.row}>
         <View style={styles.left}>
           {badge ? (
@@ -65,7 +69,7 @@ export function SectionHeader({
               <Text style={styles.badgeText}>{badge}</Text>
             </Animated.View>
           ) : null}
-          <Text style={styles.title}>{title}</Text>
+          <Text style={[styles.title, compact && styles.titleCompact]}>{title}</Text>
         </View>
         {children ??
           (onAction ? (
@@ -73,9 +77,13 @@ export function SectionHeader({
               onPress={onAction}
               accessibilityRole="button"
               hitSlop={8}
-              style={({ pressed }) => [styles.action, pressed && { opacity: 0.85 }]}
+              style={({ pressed }) => [
+                styles.action,
+                compact && styles.actionCompact,
+                pressed && { opacity: 0.85 },
+              ]}
             >
-              <Text style={styles.actionText}>{actionLabel}</Text>
+              <Text style={[styles.actionText, compact && styles.actionTextCompact]}>{actionLabel}</Text>
             </Pressable>
           ) : (
             <Text style={[styles.action, styles.actionText]}>{actionLabel}</Text>
@@ -91,25 +99,40 @@ const styles = StyleSheet.create({
     paddingTop: 28,
     paddingBottom: 14,
   },
+  wrapFlush: {
+    paddingHorizontal: 0,
+  },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  left: { flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 },
-  title: { ...typography.subheading, color: colors.text },
+  left: { flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1, minWidth: 0, paddingRight: 8 },
+  title: { ...typography.subheading, color: colors.text, fontSize: 22, lineHeight: 27, flexShrink: 1 },
+  titleCompact: { fontSize: 18, lineHeight: 22 },
   action: {
     backgroundColor: colors.primary,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    minHeight: 40,
+    justifyContent: 'center',
     borderRadius: radii.pill,
     overflow: 'hidden',
+    flexShrink: 0,
+  },
+  actionCompact: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    minHeight: 36,
   },
   actionText: {
     ...typography.caption,
+    fontSize: 15,
+    lineHeight: 20,
     color: colors.secondary,
-    fontWeight: '700',
+    fontWeight: '800',
   },
+  actionTextCompact: { fontSize: 13, lineHeight: 16 },
   badge: {
     backgroundColor: colors.skyDeep,
     paddingHorizontal: 8,

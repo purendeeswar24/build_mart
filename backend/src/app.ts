@@ -39,6 +39,10 @@ export function createApp() {
       credentials: true,
     }),
   );
+
+  // Raw body required for Razorpay HMAC — must run before express.json()
+  app.post('/api/v1/payments/webhook', express.raw({ type: 'application/json' }), paymentsWebhookHandler);
+
   app.use(express.json({ limit: '100kb' }));
   app.use(rateLimiter);
 

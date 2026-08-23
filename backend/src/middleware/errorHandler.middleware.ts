@@ -1,4 +1,5 @@
 import { NextFunction, Request, Response } from 'express';
+import { ZodError } from 'zod';
 
 export interface ApiErrorBody {
   error: {
@@ -43,6 +44,14 @@ export function errorHandler(
   if (err && typeof err === 'object' && 'issues' in err) {
     const body: ApiErrorBody = {
       error: { code: 'VALIDATION_ERROR', message: 'Invalid request body.' },
+    };
+    res.status(400).json(body);
+    return;
+  }
+
+  if (err instanceof SyntaxError) {
+    const body: ApiErrorBody = {
+      error: { code: 'INVALID_JSON', message: 'Invalid JSON body.' },
     };
     res.status(400).json(body);
     return;

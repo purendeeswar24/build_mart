@@ -51,12 +51,17 @@ export function CartProvider({ children }: PropsWithChildren) {
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
+    let alive = true;
     (async () => {
       try {
         const raw = await AsyncStorage.getItem(CART_KEY);
-        if (raw) setLines(JSON.parse(raw) as CartLine[]);
+        if (!alive) return;
+        if (raw) {
+          const stored = JSON.parse(raw) as CartLine[];
+          setLines((prev) => (prev.length > 0 ? prev : stored));
+        }
       } finally {
-        setHydrated(true);
+        if (alive) setHydrated(true);
       }
     })();
     productsService

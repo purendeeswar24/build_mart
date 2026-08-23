@@ -29,6 +29,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
+    minHeight: 22,
   },
   focused: {
     backgroundColor: colors.primary,

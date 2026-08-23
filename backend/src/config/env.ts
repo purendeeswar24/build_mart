@@ -7,7 +7,10 @@ dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
-  PORT: z.coerce.number().default(4000),
+  PORT: z.preprocess(
+    (val) => (val === '' || val == null ? undefined : val),
+    z.coerce.number().int().min(1).max(65535).default(4000),
+  ),
   SUPABASE_URL: z.string().url().optional(),
   SUPABASE_ANON_KEY: z.string().optional(),
   SUPABASE_SERVICE_ROLE_KEY: z.string().optional(),

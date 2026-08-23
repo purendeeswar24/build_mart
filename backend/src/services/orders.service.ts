@@ -26,8 +26,36 @@ export type PlaceOrderBody = {
   }>;
 };
 
+const PRICE_EPS = 0.05;
+
 function nextOrderId() {
-  return `BM${Math.floor(48000 + Math.random() * 9000)}`;
+  return `BM${Date.now().toString(36).toUpperCase()}${crypto.randomBytes(3).toString('hex').toUpperCase()}`;
+}
+
+function assertTotals(body: PlaceOrderBody) {
+  const itemsTotal = body.items.reduce((sum, i) => sum + i.priceAtPurchase * i.quantity, 0);
+  if (Math.abs(itemsTotal - body.subtotal) > PRICE_EPS) {
+    throw new AppError('PRICE_MISMATCH', 'Subtotal does not match cart items.', 400);
+  }
+  if (Math.abs(body.subtotal + body.deliveryFee - body.total) > PRICE_EPS) {
+    throw new AppError('PRICE_MISMATCH', 'Total does not match subtotal plus delivery.', 400);
+  }
+}
+
+function canPersist(userId: string) {
+  const admin = tryGetSupabaseAdmin();
+  if (!admin || userId.startsWith('demo-')) {
+    return { admin, persist: false as const };
+  }
+  return { admin, persist: true as const };
+}
+
+async function rollbackOrder(
+  admin: NonNullable<ReturnType<typeof tryGetSupabaseAdmin>>,
+  orderId: string,
+) {
+  await admin.from('order_items').delete().eq('order_id', orderId);
+  await admin.from('orders').delete().eq('id', orderId);
 }
 
 async function decrementStock(
@@ -47,6 +75,7 @@ export async function placeOrder(userId: string, body: PlaceOrderBody) {
   if (!body.items.length) {
     throw new AppError('BAD_REQUEST', 'Cart is empty.', 400);
   }
+  assertTotals(body);
 
   const dbReady = isDatabaseConfigured();
   let pricedItems = body.items;
@@ -149,6 +178,7 @@ export async function placeOrder(userId: string, body: PlaceOrderBody) {
     }
   }
 
+  const rp = getRazorpayConfig();
   return {
     id: orderId,
     status,

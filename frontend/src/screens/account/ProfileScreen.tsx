@@ -14,6 +14,7 @@ import {
 import { useAuth } from '../../hooks/useAuth';
 import { ROLE_OPTIONS } from '../../services/auth.service';
 import { colors, radii, spacing, typography } from '../../theme';
+import { AmbientDarkBg } from '../../components/layout/AmbientDarkBg';
 
 const MENU = [
   { key: 'profile', label: 'Edit profile', icon: UserRound },
@@ -65,17 +66,14 @@ export function ProfileScreen({
 
   if (!isAuthenticated) {
     return (
-      <View style={styles.screen}>
-        <View style={styles.hero}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>?</Text>
+      <View style={styles.guestScreen}>
+        <AmbientDarkBg />
+        <View style={styles.guestInner}>
+          <View style={styles.guestAvatar}>
+            <Text style={styles.guestAvatarText}>?</Text>
           </View>
-          <View>
-            <Text style={styles.name}>Welcome to BuildMart</Text>
-            <Text style={styles.meta}>Log in for orders, wishlist & faster checkout</Text>
-          </View>
-        </View>
-        <View style={{ padding: spacing.lg }}>
+          <Text style={styles.guestTitle}>Welcome to BuildMart</Text>
+          <Text style={styles.guestMeta}>Log in for orders, wishlist & faster checkout</Text>
           <Pressable style={styles.loginBtn} onPress={openLoginModal}>
             <Text style={styles.loginBtnText}>Log in / Create account</Text>
           </Pressable>
@@ -153,9 +151,49 @@ export function ProfileScreen({
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.background },
-  hero: {
+  screen: { flex: 1, backgroundColor: colors.secondary },
+  guestScreen: {
+    flex: 1,
     backgroundColor: colors.secondary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+    paddingHorizontal: 16,
+  },
+  guestInner: {
+    alignItems: 'center',
+    width: '100%',
+    maxWidth: 380,
+    zIndex: 1,
+    gap: 12,
+  },
+  guestAvatar: {
+    width: 88,
+    height: 88,
+    borderRadius: 44,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+  },
+  guestAvatarText: { fontSize: 32, fontWeight: '800', color: colors.primaryInk },
+  guestTitle: {
+    fontSize: 28,
+    lineHeight: 34,
+    fontWeight: '800',
+    color: colors.textInverse,
+    textAlign: 'center',
+    letterSpacing: -0.5,
+  },
+  guestMeta: {
+    fontSize: 16,
+    lineHeight: 24,
+    color: '#C4C0CE',
+    textAlign: 'center',
+    marginBottom: 10,
+  },
+  hero: {
+    backgroundColor: colors.secondaryMuted,
     paddingHorizontal: spacing.lg,
     paddingVertical: 18,
     flexDirection: 'row',
@@ -175,11 +213,16 @@ const styles = StyleSheet.create({
   meta: { ...typography.micro, color: '#8B889B', marginTop: 2 },
   loginBtn: {
     backgroundColor: colors.primary,
-    borderRadius: 12,
-    paddingVertical: 14,
+    borderRadius: 14,
+    paddingVertical: 16,
+    paddingHorizontal: 28,
     alignItems: 'center',
+    alignSelf: 'center',
+    minWidth: 260,
+    width: '100%',
+    maxWidth: 320,
   },
-  loginBtnText: { fontWeight: '700', color: colors.primaryInk },
+  loginBtnText: { fontWeight: '800', color: colors.primaryInk, fontSize: 16 },
   menu: { paddingHorizontal: spacing.lg, paddingTop: 8 },
   menuIcon: {
     width: 32,
@@ -195,26 +238,26 @@ const styles = StyleSheet.create({
     gap: 11,
     paddingVertical: 13,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.border,
+    borderBottomColor: '#3A3D4A',
   },
-  menuLabel: { flex: 1, ...typography.body, color: colors.text },
+  menuLabel: { flex: 1, ...typography.body, color: colors.textInverse },
   proCard: {
     marginHorizontal: spacing.lg,
     marginTop: 12,
-    backgroundColor: colors.surfaceWarm,
+    backgroundColor: colors.secondaryMuted,
     borderRadius: radii.md,
     padding: 12,
   },
   proHead: { flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 3 },
-  proTitle: { ...typography.caption, fontWeight: '700', color: colors.text },
-  proBody: { ...typography.micro, color: colors.textSecondary, marginBottom: 9 },
+  proTitle: { ...typography.caption, fontWeight: '700', color: colors.textInverse },
+  proBody: { ...typography.micro, color: '#C4C0CE', marginBottom: 9 },
   proCta: {
-    backgroundColor: colors.secondary,
+    backgroundColor: colors.primary,
     borderRadius: 9,
     paddingVertical: 9,
     alignItems: 'center',
   },
-  proCtaText: { ...typography.caption, fontWeight: '700', color: colors.primary },
+  proCtaText: { ...typography.caption, fontWeight: '700', color: colors.primaryInk },
   logout: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -222,5 +265,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingVertical: 16,
   },
-  logoutText: { ...typography.body, color: colors.danger },
+  logoutText: { ...typography.body, color: '#E57373' },
 });

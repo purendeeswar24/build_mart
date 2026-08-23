@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { Animated, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Animated, Pressable, StyleSheet, Text, TextInput, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Bolt, MapPin, Search, ShoppingBag, CircleUser } from 'lucide-react-native';
 import { useLayout } from '../../hooks/useLayout';
@@ -17,16 +17,12 @@ type Props = {
   variant?: 'dark' | 'light';
 };
 
-/** BuildZap-style light header: brand · delivery · cart/user · search */
 export function AppHeader({
-  city = 'Hyderabad',
-  etaLabel = 'Delivery in 30 mins',
   cartCount = 0,
   searchPlaceholder = 'Search products',
   onSearchPress,
   onCartPress,
   onProfilePress,
-  onLocationPress,
   variant = 'light',
 }: Props) {
   const insets = useSafeAreaInsets();
@@ -55,6 +51,20 @@ export function AppHeader({
     ]).start();
   }, [cartCount, badgeScale]);
 
+  const searchField = (
+    <Pressable accessibilityRole="search" onPress={onSearchPress} style={[styles.searchPress, compact && styles.searchPressCompact]}>
+      <View style={[styles.search, isDark && styles.searchDark]}>
+        <Search size={18} color="#6B8799" />
+        <TextInput
+          editable={false}
+          placeholder={searchPlaceholder}
+          placeholderTextColor="#6B8799"
+          style={[styles.searchInput, { pointerEvents: 'none' }]}
+        />
+      </View>
+    </Pressable>
+  );
+
   return (
     <View
       style={[
@@ -65,29 +75,14 @@ export function AppHeader({
     >
       <View style={styles.topRow}>
         <View style={styles.brandBlock}>
-          <Text style={[styles.brand, isDark && styles.brandDark]}>
+          <Text style={[styles.brand, compact && styles.brandCompact, isDark && styles.brandDark]}>
             BUILD<Text style={styles.brandAccent}>MART</Text>
           </Text>
-          <Bolt size={14} color={colors.primary} style={styles.bolt} />
         </View>
 
-        <Pressable
-          accessibilityRole="button"
-          onPress={onLocationPress}
-          style={styles.location}
-        >
-          <Text style={[styles.eta, isDark && styles.etaDark]} numberOfLines={1}>
-            {etaLabel.includes('Delivery') ? etaLabel : `Delivery in 30 mins`}
-          </Text>
-          <View style={styles.cityRow}>
-            <MapPin size={11} color={isDark ? colors.textMuted : colors.textSecondary} />
-            <Text style={[styles.city, isDark && styles.cityDark]} numberOfLines={1}>
-              {city}
-            </Text>
-          </View>
-        </Pressable>
+        {!compact ? searchField : null}
 
-        <View style={styles.actions}>
+        <View style={[styles.actions, compact && styles.actionsCompact]}>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={`Cart, ${cartCount} items`}
@@ -101,6 +96,7 @@ export function AppHeader({
               </Animated.View>
             ) : null}
           </Pressable>
+
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Account"
@@ -111,18 +107,7 @@ export function AppHeader({
           </Pressable>
         </View>
       </View>
-
-      <Pressable accessibilityRole="search" onPress={onSearchPress}>
-        <View style={[styles.search, isDark && styles.searchDark]}>
-          <Search size={16} color={colors.textMuted} />
-          <TextInput
-            editable={false}
-            placeholder={searchPlaceholder}
-            placeholderTextColor={colors.textMuted}
-            style={[styles.searchInput, { pointerEvents: 'none' }]}
-          />
-        </View>
-      </Pressable>
+      {compact ? searchField : null}
     </View>
   );
 }
@@ -136,9 +121,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.secondary,
   },
   wrapperLight: {
-    backgroundColor: colors.surface,
+    backgroundColor: '#E8EAED',
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.border,
+    borderBottomColor: '#D0D4DA',
   },
   topRow: {
     flexDirection: 'row',
@@ -149,51 +134,24 @@ const styles = StyleSheet.create({
   brandBlock: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 2,
+    flexShrink: 0,
   },
   brand: {
-    fontSize: 16,
+    fontSize: 24,
     fontWeight: '900',
-    fontStyle: 'italic',
-    color: colors.text,
-    letterSpacing: -0.3,
+    letterSpacing: -0.8,
+    color: '#0A0A0A',
+    textTransform: 'uppercase',
+  },
+  brandCompact: {
+    fontSize: 20,
+    letterSpacing: -0.4,
   },
   brandDark: {
     color: colors.textInverse,
   },
   brandAccent: {
     color: colors.primary,
-  },
-  bolt: {
-    marginLeft: 1,
-  },
-  location: {
-    flex: 1,
-    alignItems: 'center',
-    minWidth: 0,
-    paddingHorizontal: 4,
-  },
-  eta: {
-    ...typography.label,
-    fontWeight: '700',
-    color: colors.text,
-    textAlign: 'center',
-  },
-  etaDark: {
-    color: colors.textInverse,
-  },
-  cityRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-    marginTop: 1,
-  },
-  city: {
-    ...typography.micro,
-    color: colors.textSecondary,
-  },
-  cityDark: {
-    color: colors.textMuted,
   },
   actions: {
     flexDirection: 'row',
@@ -218,7 +176,7 @@ const styles = StyleSheet.create({
   },
   actionLabel: {
     ...typography.micro,
-    color: colors.textSecondary,
+    color: '#5C6570',
     marginTop: 2,
   },
   actionLabelDark: {
@@ -241,25 +199,18 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: colors.primaryInk,
   },
-  search: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.background,
-    borderRadius: radii.md,
-    paddingHorizontal: 14,
-    minHeight: 46,
-    gap: 10,
+  avatar: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: 'rgba(17, 17, 17, 0.06)',
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: 'rgba(17, 17, 17, 0.08)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  searchDark: {
-    backgroundColor: colors.secondaryMuted,
-    borderColor: colors.secondaryMuted,
-  },
-  searchInput: {
-    flex: 1,
-    ...typography.body,
-    color: colors.text,
-    paddingVertical: 10,
+  avatarDark: {
+    backgroundColor: 'rgba(255, 255, 255, 0.12)',
+    borderColor: 'rgba(255, 255, 255, 0.18)',
   },
 });

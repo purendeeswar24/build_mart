@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
   NativeScrollEvent,
@@ -7,16 +7,17 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
 import { Image } from 'expo-image';
 import { ClipboardList, Droplets, Hammer, Package, Truck, Zap } from 'lucide-react-native';
 import { AppHeader } from '../../components/layout/AppHeader';
-import { HomeSkeleton } from '../../components/layout/Skeleton';
-import { FadeIn } from '../../components/motion/FadeIn';
 import { ProductCard } from '../../components/product/ProductCard';
 import { CategoryTile } from '../../components/product/CategoryTile';
 import { SectionHeader } from '../../components/layout/SectionHeader';
+import { HScroll } from '../../components/layout/HScroll';
 import { productsService, type CatalogCategory, type ProductCardModel } from '../../services/products.service';
 import { hireCategoryLabel, hireService, hireTimeLeft, type HireJobCard } from '../../services/hire.service';
 import { useCart } from '../../hooks/useCart';
@@ -41,6 +42,56 @@ type Props = {
   onHirePress?: () => void;
   onHireJobPress?: (jobId: string) => void;
 };
+
+function LocationFooterBadge({
+  city,
+  pincode,
+  eta,
+  compact,
+  onPress,
+}: {
+  city: string;
+  pincode: string;
+  eta: string;
+  compact: boolean;
+  onPress?: () => void;
+}) {
+  return (
+    <View style={[styles.locBadge, compact && styles.locBadgeCompact]}>
+      <View style={[styles.locRow, compact && styles.locRowCompact]}>
+        <View style={styles.locMain}>
+          <View style={styles.locTop}>
+            <View style={styles.locIcon}>
+              <MapPin size={16} color={colors.primaryInk} />
+            </View>
+            <View style={styles.locCopy}>
+              <Text style={styles.locKicker}>DELIVERING TO</Text>
+              <Text style={[styles.locCity, compact && styles.locCityCompact]}>{city}</Text>
+              <Text style={styles.locMeta}>
+                PIN {pincode} · {eta} · COD available
+              </Text>
+            </View>
+          </View>
+          <View style={styles.locPills}>
+            {HYD_AREAS.map((area) => (
+              <View key={area} style={styles.locPill}>
+                <Text style={styles.locPillText}>{area}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Select your address"
+          onPress={onPress}
+          style={[styles.locBtn, compact && styles.locBtnCompact]}
+        >
+          <Text style={styles.locBtnText}>Select your address</Text>
+        </Pressable>
+      </View>
+    </View>
+  );
+}
 
 function pad2(n: number) {
   return String(Math.max(0, n)).padStart(2, '0');
@@ -92,18 +143,18 @@ function SaleCountdown() {
 
 function HeroWash({ children }: { children: React.ReactNode }) {
   const a = useRef(new Animated.Value(0.35)).current;
-  const b = useRef(new Animated.Value(0.15)).current;
+  const b = useRef(new Animated.Value(0.12)).current;
 
   useEffect(() => {
     const loop = Animated.loop(
       Animated.sequence([
         Animated.parallel([
           Animated.timing(a, { toValue: 0.55, duration: 2200, useNativeDriver: true }),
-          Animated.timing(b, { toValue: 0.08, duration: 2200, useNativeDriver: true }),
+          Animated.timing(b, { toValue: 0.28, duration: 2200, useNativeDriver: true }),
         ]),
         Animated.parallel([
           Animated.timing(a, { toValue: 0.3, duration: 2200, useNativeDriver: true }),
-          Animated.timing(b, { toValue: 0.4, duration: 2200, useNativeDriver: true }),
+          Animated.timing(b, { toValue: 0.12, duration: 2200, useNativeDriver: true }),
         ]),
       ]),
     );
@@ -112,10 +163,133 @@ function HeroWash({ children }: { children: React.ReactNode }) {
   }, [a, b]);
 
   return (
-    <View style={styles.hero}>
+    <View style={styles.heroWash}>
       <Animated.View style={[styles.heroWashA, { opacity: a }]} />
       <Animated.View style={[styles.heroWashB, { opacity: b }]} />
       {children}
+    </View>
+  );
+}
+
+function BuildmartHero({ isWide, compact }: { isWide: boolean; compact: boolean }) {
+  return (
+    <View style={[styles.hero, isWide ? styles.heroWide : styles.heroNarrow]}>
+      <HeroWash>
+        <View style={[styles.heroCopy, compact && styles.heroCopyCompact]}>
+          <Text style={styles.heroEyebrow}>INDIA’S FAST LANE FOR SITES</Text>
+          <Text style={[styles.heroTitle, compact && styles.heroTitleCompact]}>
+            30-minute delivery for <Text style={styles.heroAccent}>materials</Text>
+          </Text>
+          <Text style={[styles.heroSub, compact && styles.heroSubCompact]}>
+            Pipes, cement, wires, paints & fittings — no minimum quantity.
+          </Text>
+          <Text style={[styles.heroDescription, compact && styles.heroDescCompact]}>
+            Fast, reliable delivery of construction materials directly to your site. Same-day ordering available for most areas.
+          </Text>
+          <View style={styles.heroPills}>
+            <View style={[styles.pill, styles.pillDelivery, compact && styles.pillCompact]}>
+              <Zap size={12} color={colors.primaryDark} />
+              <Text style={styles.pillText} numberOfLines={1}>
+                30-min delivery
+              </Text>
+            </View>
+            <View style={[styles.pill, compact && styles.pillCompact]}>
+              <Package size={12} color={colors.primaryDark} />
+              <Text style={styles.pillText} numberOfLines={1}>
+                Any quantity
+              </Text>
+            </View>
+          </View>
+        </View>
+      </HeroWash>
+      <View style={[styles.heroMedia, isWide ? styles.heroMediaWide : styles.heroMediaNarrow]}>
+        <Image
+          source={HERO_IMAGE}
+          style={styles.heroImage}
+          contentFit="cover"
+          cachePolicy="memory-disk"
+          priority="high"
+          transition={0}
+          accessibilityLabel="Buildmart construction tools and building materials"
+        />
+      </View>
+    </View>
+  );
+}
+
+function AboutSection({
+  isWide,
+  compact,
+  hPad,
+  onReadMore,
+  onLayout,
+}: {
+  isWide: boolean;
+  compact: boolean;
+  hPad: number;
+  onReadMore?: () => void;
+  onLayout?: (e: LayoutChangeEvent) => void;
+}) {
+  return (
+    <View
+      style={[
+        styles.about,
+        { marginHorizontal: -hPad, paddingHorizontal: isWide ? 28 : hPad },
+      ]}
+      onLayout={onLayout}
+    >
+      <View style={styles.aboutHeading}>
+        <View style={styles.aboutHeadingInner}>
+          <View style={styles.aboutHeadingRow}>
+            <View style={styles.aboutTitleBlock}>
+              <Text style={[styles.aboutTitle, compact && styles.aboutTitleCompact]}>ABOUT</Text>
+              <View style={styles.aboutRule} />
+            </View>
+            <Text style={[styles.aboutTitle, compact && styles.aboutTitleCompact, styles.aboutTitleAccent]}>
+              US
+            </Text>
+          </View>
+        </View>
+      </View>
+      <View style={isWide ? styles.aboutWide : styles.aboutNarrow}>
+        <View style={[styles.aboutPhotoWrap, compact && styles.aboutPhotoWrapCompact]}>
+          <Image
+            source={ABOUT_IMAGE}
+            style={[styles.aboutPhoto, compact && styles.aboutPhotoCompact]}
+            contentFit="cover"
+            cachePolicy="memory-disk"
+            priority="high"
+            transition={0}
+            accessibilityLabel="Buildmart tools, site work and building materials"
+          />
+        </View>
+        <View style={[styles.aboutCopy, isWide && styles.aboutCopyWide]}>
+          <Text style={[styles.aboutBody, compact && styles.aboutBodyCompact]}>
+            <Text style={styles.aboutLeadDark}>Build</Text>
+            <Text style={styles.aboutLeadGold}>mart</Text>
+            {' is the fast lane for construction sites. We stock tools, cement, pipes, paints, electricals and hardware — and deliver in about 30 minutes, with no minimum order quantity.'}
+          </Text>
+          <Text style={[styles.aboutBody, compact && styles.aboutBodyCompact]}>
+            Contractors, site engineers and homeowners use Buildmart to replace last-minute shortages
+            without waiting on a wholesale yard. Every SKU is checked for stock before checkout, so
+            what you order is what arrives at the gate.
+          </Text>
+          <Text style={[styles.aboutBody, compact && styles.aboutBodyCompact]}>
+            From a single fitting to a full materials drop, we keep pricing clear, quantities flexible
+            and delivery windows tight — so work on site never stalls for want of a bag of cement or
+            a length of pipe.
+          </Text>
+          <Pressable
+            style={styles.aboutCta}
+            onPress={onReadMore}
+            accessibilityRole="button"
+            accessibilityLabel="Read more about Buildmart"
+          >
+            <Text style={styles.aboutCtaText}>READ MORE</Text>
+            <ArrowRight size={14} color="#FFFFFF" />
+          </Pressable>
+        </View>
+      </View>
     </View>
   );
 }
@@ -137,7 +311,7 @@ export function HomeScreen({
   const featuredW = (width - gutter * 2 - cardGap * (featuredCols - 1)) / featuredCols;
   const [bannerIndex, setBannerIndex] = useState(0);
   const bannerRef = useRef<ScrollView>(null);
-  const { count } = useCart();
+  const { count, addItem } = useCart();
   const { selected, deliveryStatus } = useAddress();
   const [loading, setLoading] = useState(true);
   const [banners, setBanners] = useState<ImageSourcePropType[]>([]);
@@ -150,9 +324,7 @@ export function HomeScreen({
 
   useEffect(() => {
     let alive = true;
-    (async () => {
-      setLoading(true);
-      const feed = await productsService.getHomeFeed();
+    productsService.getHomeFeed().then((feed) => {
       if (!alive) return;
       setBanners(feed.banners);
       setSaleBanner(feed.saleBanner);
@@ -199,46 +371,92 @@ export function HomeScreen({
       onCategoryPress?.(categories[0]?.id ?? 'c-tanks', categories[0]?.name ?? 'All');
   };
 
+  const orderTank = () => {
+    const size = TANK_SIZES.find((s) => s.litres === 1000) ?? TANK_SIZES[2];
+    addItem(size.productId, size.variant, 1, size.price);
+    bounceCart();
+    showToast(`${size.litres}L tank added to cart`, {
+      tone: 'success',
+      action: onCartPress ? { label: 'View cart', onPress: onCartPress } : undefined,
+    });
+  };
+
   return (
     <View style={styles.screen}>
-      <AppHeader
-        city={selected?.city ?? 'Hyderabad'}
-        etaLabel={eta}
-        cartCount={count}
-        onSearchPress={onSearchPress}
-        onCartPress={onCartPress}
-        onProfilePress={onProfilePress}
-        onLocationPress={onLocationPress}
-        variant="light"
-      />
-
-      {loading ? (
-        <View style={styles.loader}>
-          <HomeSkeleton />
+      <StatusBar style={statusLight ? 'light' : 'dark'} />
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        scrollEventThrottle={16}
+        contentContainerStyle={[
+          styles.content,
+          { paddingHorizontal: hPad, paddingTop: headerSize },
+        ]}
+        onLayout={(e) => {
+          const w = e.nativeEvent.layout.width;
+          if (w > 0) setPageW(w);
+        }}
+        onScroll={(e) => {
+          const y = e.nativeEvent.contentOffset.y;
+          const aboutY = aboutOffsetY.current;
+          const h = headerHRef.current;
+          if (aboutY <= 0 || h <= 0) return;
+          const start = Math.max(aboutY - h - 8, 0);
+          const end = Math.max(aboutY, start + 1);
+          const p = Math.min(1, Math.max(0, (y - start) / (end - start)));
+          headerProgress.setValue(p);
+          const light = p > 0.5;
+          if (light !== statusLightRef.current) {
+            statusLightRef.current = light;
+            setStatusLight(light);
+          }
+        }}
+      >
+        <View style={styles.heroWrap}>
+          <BuildmartHero isWide={isWide} compact={!isWide} />
         </View>
-      ) : (
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
-          <FadeIn>
-            <HeroWash>
-              <Text style={styles.heroEyebrow}>INDIA’S FAST LANE FOR SITES</Text>
-              <Text style={styles.heroTitle}>
-                30-minute delivery for <Text style={styles.heroAccent}>materials</Text>
-              </Text>
-              <Text style={styles.heroSub}>
-                Pipes, cement, wires, paints & fittings — no minimum quantity.
-              </Text>
-              <View style={styles.heroPills}>
-                <View style={styles.pill}>
-                  <Zap size={12} color={colors.primaryDark} />
-                  <Text style={styles.pillText}>30-min delivery</Text>
-                </View>
-                <View style={styles.pill}>
-                  <Package size={12} color={colors.primaryDark} />
-                  <Text style={styles.pillText}>Any quantity</Text>
+
+        <View style={styles.belowHero}>
+          <ScrollView
+            ref={bannerRef}
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            onScroll={onBannerScroll}
+            scrollEventThrottle={16}
+            style={styles.bannerScroller}
+            contentContainerStyle={styles.bannerRow}
+            decelerationRate="fast"
+          >
+            {banners.map((src, i) => (
+              <View
+                key={i}
+                style={[
+                  styles.bannerSlide,
+                  { width: bannerW, marginRight: i === banners.length - 1 ? 0 : H_PAD },
+                ]}
+              >
+                <Image
+                  source={src}
+                  style={styles.bannerImage}
+                  contentFit="cover"
+                  cachePolicy="memory-disk"
+                  transition={0}
+                />
+                <View style={styles.bannerOverlay}>
+                  <Text style={styles.bannerEyebrow}>30-MIN DELIVERY</Text>
+                  <Text style={styles.bannerTitle}>
+                    {i === 0 ? 'Site materials, ready when you are' : 'Pipes, paints & hardware'}
+                  </Text>
                 </View>
               </View>
-            </HeroWash>
-          </FadeIn>
+            ))}
+          </ScrollView>
+          <View style={styles.dots}>
+            {banners.map((_, i) => (
+              <View key={i} style={[styles.dot, i === bannerIndex && styles.dotActive]} />
+            ))}
+          </View>
+        </View>
 
           {endingSoon.length > 0 ? (
             <FadeIn delay={40}>
@@ -307,96 +525,83 @@ export function HomeScreen({
                     </Text>
                   </View>
                 </View>
-              ))}
-            </ScrollView>
-            <View style={styles.dots}>
-              {banners.map((_, i) => (
-                <View key={i} style={[styles.dot, i === bannerIndex && styles.dotActive]} />
-              ))}
-            </View>
-          </FadeIn>
-
-          <FadeIn delay={120}>
-            <View style={styles.sectionHead}>
-              <Text style={styles.sectionTitle}>Shop by category</Text>
-              <Pressable onPress={openAllCategories}>
-                <Text style={styles.seeAll}>View all</Text>
-              </Pressable>
-            </View>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.catRow}
-              decelerationRate="fast"
-            >
-              {categories.map((cat, i) => (
-                <FadeIn key={cat.id} delay={i * 40} from="left" distance={16} duration={360}>
-                  <CategoryTile
-                    category={cat}
-                    mini
-                    compact
-                    onPress={() => onCategoryPress?.(cat.id, cat.name)}
-                  />
-                </FadeIn>
-              ))}
-              <Pressable
-                style={styles.bookHelpMini}
-                onPress={onCapacityPress}
-                accessibilityRole="button"
-                accessibilityLabel="Tank capacity calculator"
-              >
-                <View style={styles.bookHelpIconMini}>
-                  <Droplets size={20} color={colors.primaryInk} />
+                <View style={styles.salePerk}>
+                  <Text style={styles.salePerkText}>Extra 10% on bulk</Text>
                 </View>
-                <Text style={styles.bookHelpLabel}>Tank</Text>
-              </Pressable>
-            </ScrollView>
-          </FadeIn>
-
-          <FadeIn delay={160}>
-            <Section
-              title="Trending products"
-              badge="HOT"
-              products={trending}
-              onProductPress={onProductPress}
-              onOpenCart={onCartPress}
-              onAction={openAllCategories}
-            />
-          </FadeIn>
-
-          <FadeIn delay={200}>
-            <SectionHeader
-              title="Limited offers"
-              badge="SALE"
-              actionLabel="Shop deals"
-              onAction={() => onProductPress?.(featured[0]?.id ?? trending[0]?.id ?? '')}
-            />
-            <View style={styles.saleBlock}>
-              <View style={styles.saleTop}>
-                <Text style={styles.saleEyebrow}>LIMITED SALE</Text>
-                <Text style={styles.saleTitle}>Get 25% off — tonight only</Text>
+                <View style={styles.salePerk}>
+                  <Text style={styles.salePerkText}>No min. order</Text>
+                </View>
               </View>
               <SaleCountdown />
-              {saleBanner ? (
-                <Image source={saleBanner} style={styles.saleImg} contentFit="cover" />
-              ) : null}
+              <Pressable
+                style={styles.saleCta}
+                onPress={() => onProductPress?.(featured[0]?.id ?? trending[0]?.id ?? '')}
+                accessibilityRole="button"
+                accessibilityLabel="Shop the sale"
+              >
+                <Text style={styles.saleCtaText}>Shop the sale</Text>
+                <ArrowRight size={20} color={colors.primaryInk} />
+              </Pressable>
             </View>
-          </FadeIn>
+          </View>
+        </View>
 
-          <FadeIn delay={240}>
-            <Section
-              title="Best sellers"
-              badge="TOP"
-              products={bestSellers}
-              onProductPress={onProductPress}
-              onOpenCart={onCartPress}
-              onAction={openAllCategories}
+        <Section
+          title="Best sellers"
+          badge="TOP"
+          products={bestSellers}
+          onProductPress={onProductPress}
+          onOpenCart={onCartPress}
+          onAction={openAllCategories}
+          compact={isPhone}
+        />
+
+        <View>
+          <View style={styles.sectionHead}>
+            <Text style={[styles.sectionTitle, isPhone && styles.sectionTitleCompact]}>Featured products</Text>
+          </View>
+          <View style={styles.featuredGrid}>
+            {featured.map((p) => (
+              <View key={p.id} style={{ width: featuredW }}>
+                <ProductCard
+                  product={p}
+                  width={featuredW}
+                  onPress={() => onProductPress?.(p.id)}
+                  onAddPress={() => onProductPress?.(p.id)}
+                  onOpenCart={onCartPress}
+                />
+              </View>
+            ))}
+          </View>
+        </View>
+
+        <View>
+          <Text style={[styles.howTitle, isPhone && styles.howTitleCompact]}>How it works</Text>
+          <View style={[styles.howRow, !isWide && styles.howRowNarrow]}>
+            <HowCard
+              icon={<Package size={20} color={colors.primaryInk} />}
+              title="Browse & discover"
+              body="Categories built for site needs"
             />
-          </FadeIn>
+            <HowCard
+              icon={<ClipboardList size={20} color={colors.primaryInk} />}
+              title="Order instantly"
+              body="No MOQ · checkout in minutes"
+            />
+            <HowCard
+              icon={<Truck size={20} color={colors.primaryInk} />}
+              title="Fast delivery"
+              body="Doorstep in ~30 minutes"
+            />
+          </View>
+        </View>
 
-          <FadeIn delay={280}>
-            <View style={styles.sectionHead}>
-              <Text style={styles.sectionTitle}>Featured products</Text>
+          <View style={[styles.toolBanner, isPhone && styles.toolBannerCompact]}>
+            <View style={styles.toolCopy}>
+              <Text style={styles.toolTitle}>Need a water tank?</Text>
+              <Pressable onPress={onCapacityPress} accessibilityRole="button">
+                <Text style={styles.toolSub}>Capacity calculator → recommend in-stock sizes</Text>
+              </Pressable>
             </View>
             <View style={[styles.featuredGrid, { paddingHorizontal: gutter, gap: cardGap }]}>
               {featured.map((p, i) => (
@@ -413,33 +618,43 @@ export function HomeScreen({
             </View>
           </FadeIn>
 
-          <FadeIn delay={320}>
-            <Text style={styles.howTitle}>How it works</Text>
-            <View style={styles.howRow}>
-              <HowCard
-                icon={<Package size={20} color={colors.primaryInk} />}
-                title="Browse & discover"
-                body="Categories built for site needs"
-              />
-              <HowCard
-                icon={<ClipboardList size={20} color={colors.primaryInk} />}
-                title="Order instantly"
-                body="No MOQ · checkout in minutes"
-              />
-              <HowCard
-                icon={<Truck size={20} color={colors.primaryInk} />}
-                title="Fast delivery"
-                body="Doorstep in ~30 minutes"
-              />
-            </View>
-          </FadeIn>
-
-          <Pressable style={styles.toolBanner} onPress={onCapacityPress}>
-            <Text style={styles.toolTitle}>Need a water tank?</Text>
-            <Text style={styles.toolSub}>Capacity calculator → recommend in-stock sizes</Text>
-          </Pressable>
+          <LocationFooterBadge
+            city={selected?.city ?? 'Hyderabad'}
+            pincode={selected?.pincode ?? '500032'}
+            eta={
+              deliveryStatus?.etaMinutes
+                ? `${deliveryStatus.etaMinutes}-min delivery`
+                : '30-min delivery'
+            }
+            compact={isPhone}
+            onPress={onLocationPress}
+          />
         </ScrollView>
-      )}
+      <Animated.View
+        pointerEvents={statusLight ? 'none' : 'auto'}
+        style={[styles.headerOverlay, headerHideStyle]}
+      >
+        <View
+          onLayout={(e) => {
+            const h = e.nativeEvent.layout.height;
+            if (h <= 1) return;
+            if (Math.abs(h - headerHRef.current) < 1) return;
+            headerHRef.current = h;
+            setHeaderSize(h);
+          }}
+        >
+          <AppHeader
+            city={selected?.city ?? 'Hyderabad'}
+            etaLabel={eta}
+            cartCount={count}
+            onSearchPress={onSearchPress}
+            onCartPress={onCartPress}
+            onProfilePress={onProfilePress}
+            onLocationPress={onLocationPress}
+            variant="light"
+          />
+        </View>
+      </Animated.View>
     </View>
   );
 }
@@ -469,6 +684,7 @@ function Section({
   onProductPress,
   onOpenCart,
   onAction,
+  compact,
 }: {
   title: string;
   badge?: string;
@@ -476,28 +692,23 @@ function Section({
   onProductPress?: (id: string) => void;
   onOpenCart?: () => void;
   onAction?: () => void;
+  compact?: boolean;
 }) {
   return (
     <>
-      <SectionHeader title={title} badge={badge} onAction={onAction} />
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.hRow}
-        decelerationRate="fast"
-      >
-        {products.map((p, i) => (
-          <FadeIn key={p.id} delay={i * 45} from="left" distance={18} duration={380}>
-            <ProductCard
-              product={p}
-              width={CARD_W}
-              onPress={() => onProductPress?.(p.id)}
-              onAddPress={() => onProductPress?.(p.id)}
-              onOpenCart={onOpenCart}
-            />
-          </FadeIn>
+      <SectionHeader title={title} badge={badge} onAction={onAction} padded={false} compact={compact} />
+      <HScroll contentContainerStyle={styles.hRow} style={styles.catScroller}>
+        {products.map((p) => (
+          <ProductCard
+            key={p.id}
+            product={p}
+            width={CARD_W}
+            onPress={() => onProductPress?.(p.id)}
+            onAddPress={() => onProductPress?.(p.id)}
+            onOpenCart={onOpenCart}
+          />
         ))}
-      </ScrollView>
+      </HScroll>
     </>
   );
 }
@@ -509,15 +720,32 @@ const styles = StyleSheet.create({
   hero: {
     paddingHorizontal: H_PAD,
     paddingTop: 20,
-    paddingBottom: 16,
-    marginHorizontal: H_PAD,
-    marginTop: 12,
+  },
+  hero: {
+    alignSelf: 'stretch',
+    marginTop: 0,
     borderRadius: radii.xl,
-    backgroundColor: colors.sky,
-    borderWidth: 1,
-    borderColor: colors.border,
+    backgroundColor: '#000000',
     overflow: 'hidden',
+    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.45)',
+  },
+  heroWide: {
+    flexDirection: 'row',
+    alignItems: 'stretch',
+    height: 420,
+    minHeight: 420,
+  },
+  heroNarrow: {
+    flexDirection: 'column',
+  },
+  heroWash: {
+    flex: 1.15,
     position: 'relative',
+    overflow: 'hidden',
+    justifyContent: 'center',
+    minWidth: 0,
+    backgroundColor: '#000000',
   },
   heroWashA: {
     position: 'absolute',
@@ -530,32 +758,211 @@ const styles = StyleSheet.create({
   },
   heroWashB: {
     position: 'absolute',
-    bottom: -50,
-    left: -20,
-    width: 160,
-    height: 160,
-    borderRadius: 80,
-    backgroundColor: colors.skyDeep,
+    bottom: -40,
+    left: -16,
+    width: 200,
+    height: 200,
+    borderRadius: 100,
+    backgroundColor: '#FFFFFF',
+  },
+  heroCopy: {
+    paddingHorizontal: 22,
+    paddingTop: 24,
+    paddingBottom: 22,
+    zIndex: 1,
+    maxWidth: '100%',
+  },
+  heroCopyCompact: {
+    paddingHorizontal: 16,
+    paddingTop: 18,
+    paddingBottom: 16,
+  },
+  heroMedia: {
+    overflow: 'hidden',
+    backgroundColor: colors.secondary,
+  },
+  heroMediaWide: {
+    flex: 1,
+    minWidth: 0,
+    height: 420,
+    minHeight: 420,
+  },
+  heroMediaNarrow: {
+    width: '100%',
+    height: 200,
+  },
+  heroImage: {
+    width: '100%',
+    height: '100%',
+  },
+  about: {
+    marginTop: 28,
+    backgroundColor: '#000000',
+    overflow: 'hidden',
+    paddingTop: 36,
+    paddingBottom: 44,
+  },
+  aboutWide: {
+    flexDirection: 'row',
+    alignItems: 'stretch',
+    minHeight: 340,
+    gap: 28,
+  },
+  aboutNarrow: {
+    flexDirection: 'column',
+    gap: 22,
+  },
+  aboutPhotoWrap: {
+    flex: 1.15,
+    width: '100%',
+    minHeight: 300,
+    borderTopLeftRadius: 4,
+    borderBottomLeftRadius: 4,
+    borderTopRightRadius: 36,
+    borderBottomRightRadius: 36,
+    overflow: 'hidden',
+    backgroundColor: '#111111',
+  },
+  aboutPhotoWrapCompact: {
+    minHeight: 220,
+    borderTopRightRadius: 28,
+    borderBottomRightRadius: 28,
+  },
+  aboutPhoto: {
+    width: '100%',
+    height: '100%',
+    minHeight: 300,
+  },
+  aboutPhotoCompact: {
+    minHeight: 220,
+  },
+  aboutCopy: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  aboutCopyWide: {
+    paddingLeft: 8,
+    paddingVertical: 8,
+  },
+  aboutHeading: {
+    alignItems: 'center',
+    marginBottom: 28,
+    width: '100%',
+  },
+  aboutHeadingInner: {
+    alignItems: 'center',
+  },
+  aboutHeadingRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: 10,
+  },
+  aboutTitleBlock: {
+    alignItems: 'stretch',
+  },
+  aboutTitle: {
+    color: '#FFFFFF',
+    fontSize: 32,
+    lineHeight: 38,
+    fontWeight: '800',
+    letterSpacing: 1.4,
+  },
+  aboutTitleCompact: {
+    fontSize: 24,
+    lineHeight: 28,
+  },
+  aboutTitleAccent: {
+    color: colors.primary,
+  },
+  aboutRule: {
+    width: '100%',
+    height: 1.5,
+    backgroundColor: '#FFFFFF',
+    marginTop: 6,
+  },
+  aboutBody: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    lineHeight: 26,
+    maxWidth: 520,
+    marginBottom: 14,
+  },
+  aboutBodyCompact: {
+    fontSize: 15,
+    lineHeight: 23,
+    maxWidth: '100%',
+  },
+  aboutLeadDark: {
+    color: '#FFFFFF',
+    fontWeight: '800',
+  },
+  aboutLeadGold: {
+    color: colors.primary,
+    fontWeight: '800',
+  },
+  aboutCta: {
+    marginTop: 10,
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    borderWidth: 1,
+    borderColor: '#FFFFFF',
+    paddingHorizontal: 18,
+    paddingVertical: 11,
+  },
+  aboutCtaText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 1.2,
   },
   heroEyebrow: {
     ...typography.micro,
-    color: colors.secondary,
+    color: colors.textInverse,
     fontWeight: '800',
     letterSpacing: 0.8,
     marginBottom: 8,
   },
   heroTitle: {
     ...typography.display,
-    color: colors.text,
+    color: colors.textInverse,
+    fontSize: 42,
+    lineHeight: 50,
+    fontWeight: '900',
+  },
+  heroTitleCompact: {
+    fontSize: 28,
+    lineHeight: 34,
   },
   heroAccent: {
-    color: colors.primaryDark,
+    color: colors.primary,
   },
   heroSub: {
     ...typography.body,
-    color: colors.textSecondary,
+    color: 'rgba(255,255,255,0.82)',
     marginTop: 10,
-    maxWidth: 320,
+    maxWidth: 420,
+    fontSize: 16,
+    lineHeight: 24,
+  },
+  heroSubCompact: {
+    fontSize: 14,
+    lineHeight: 20,
+    maxWidth: '100%',
+  },
+  heroDescription: {
+    ...typography.body,
+    color: 'rgba(255,255,255,0.68)',
+    marginTop: 10,
+    maxWidth: 420,
+    fontSize: 14,
+    lineHeight: 22,
+  },
+  heroDescCompact: {
+    fontSize: 13,
+    lineHeight: 19,
+    maxWidth: '100%',
   },
   heroPills: {
     flexDirection: 'row',
@@ -566,22 +973,42 @@ const styles = StyleSheet.create({
   pill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    justifyContent: 'center',
+    gap: 8,
     backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
+    borderWidth: 2,
+    borderColor: colors.primary,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: radii.pill,
+  },
+  pillDelivery: {
+    minWidth: 178,
+    paddingHorizontal: 18,
+  },
+  pillCompact: {
+    minWidth: 0,
     paddingHorizontal: 12,
     paddingVertical: 8,
-    borderRadius: radii.pill,
   },
   pillText: {
     ...typography.micro,
     color: colors.text,
+    fontSize: 13,
+    fontWeight: '700',
+    flexShrink: 0,
   },
-  bannerScroller: { paddingLeft: H_PAD, marginTop: 12 },
+  belowHero: {
+    alignSelf: 'stretch',
+    overflow: 'hidden',
+    maxWidth: '100%',
+  },
+  bannerScroller: { marginTop: 12, maxWidth: '100%' },
+  bannerRow: {
+    flexGrow: 1,
+  },
   bannerSlide: {
     height: 168,
-    marginRight: H_PAD,
     borderRadius: radii.xl,
     overflow: 'hidden',
     ...shadows.soft,
@@ -610,93 +1037,205 @@ const styles = StyleSheet.create({
   dot: { width: 7, height: 7, borderRadius: 4, backgroundColor: colors.border },
   dotActive: { backgroundColor: colors.primary, width: 18 },
   sectionHead: {
-    paddingHorizontal: H_PAD,
     paddingTop: 28,
     paddingBottom: 14,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  sectionTitle: { ...typography.subheading, color: colors.text },
+  sectionTitle: { ...typography.subheading, color: colors.text, fontSize: 22, lineHeight: 27, flexShrink: 1, paddingRight: 8 },
+  sectionTitleCompact: { fontSize: 18, lineHeight: 22 },
+  seeAllBtn: {
+    backgroundColor: colors.primary,
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    minHeight: 40,
+    justifyContent: 'center',
+    borderRadius: radii.pill,
+  },
+  seeAllBtnCompact: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    minHeight: 36,
+  },
   seeAll: {
     ...typography.caption,
+    fontSize: 15,
+    lineHeight: 20,
     color: colors.secondary,
-    fontWeight: '700',
-    backgroundColor: colors.primary,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: radii.pill,
-    overflow: 'hidden',
+    fontWeight: '800',
+  },
+  seeAllCompact: { fontSize: 13, lineHeight: 16 },
+  catScroller: {
+    maxWidth: '100%',
+    flexGrow: 0,
   },
   catRow: {
-    paddingHorizontal: H_PAD,
     gap: 12,
     paddingBottom: 4,
     alignItems: 'flex-start',
   },
-  bookHelpMini: { width: 76, alignItems: 'center', gap: 4 },
+  bookHelpMini: { width: 124, alignItems: 'center', gap: 6 },
   bookHelpIconMini: {
-    width: 76,
-    height: 76,
-    borderRadius: radii.sm,
+    width: 124,
+    height: 124,
+    borderRadius: radii.md,
     backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
   bookHelpLabel: {
     ...typography.micro,
-    fontSize: 10,
+    fontSize: 12,
     color: colors.text,
     textAlign: 'center',
     fontWeight: '600',
   },
-  hRow: { paddingHorizontal: H_PAD, gap: CARD_GAP, paddingBottom: 4 },
+  hRow: {
+    flexDirection: 'row',
+    flexWrap: 'nowrap',
+    gap: CARD_GAP,
+    paddingVertical: 10,
+    paddingLeft: 10,
+    paddingRight: 10,
+  },
   saleBlock: {
-    marginHorizontal: H_PAD,
     marginTop: 8,
     borderRadius: radii.xl,
     overflow: 'hidden',
     backgroundColor: colors.secondary,
+    minHeight: 360,
     ...shadows.card,
   },
-  saleTop: { padding: 18, paddingBottom: 10 },
-  saleEyebrow: { ...typography.micro, color: colors.primary, fontWeight: '800' },
-  saleTitle: { fontSize: 18, fontWeight: '800', color: colors.textInverse, marginTop: 6 },
+  saleImg: {
+    ...StyleSheet.absoluteFillObject,
+    width: '100%',
+    height: '100%',
+    opacity: 0.42,
+  },
+  saleOverlay: {
+    paddingHorizontal: 22,
+    paddingTop: 28,
+    paddingBottom: 28,
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.55)',
+  },
+  saleEyebrow: {
+    ...typography.micro,
+    color: colors.primary,
+    fontWeight: '800',
+    fontSize: 13,
+    letterSpacing: 1.2,
+    textAlign: 'center',
+  },
+  saleTitle: {
+    fontSize: 26,
+    lineHeight: 32,
+    fontWeight: '800',
+    color: colors.textInverse,
+    marginTop: 8,
+    textAlign: 'center',
+  },
+  saleTitleCompact: {
+    fontSize: 20,
+    lineHeight: 26,
+  },
+  saleCopy: {
+    marginTop: 10,
+    color: 'rgba(255,255,255,0.78)',
+    fontSize: 16,
+    lineHeight: 23,
+    maxWidth: 840,
+    width: '100%',
+    textAlign: 'center',
+    alignSelf: 'center',
+  },
+  saleCopyCompact: {
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  salePerks: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 14,
+    justifyContent: 'center',
+  },
+  salePerk: {
+    backgroundColor: colors.secondaryMuted,
+    borderWidth: 1,
+    borderColor: 'rgba(212,160,23,0.35)',
+    borderRadius: radii.pill,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  salePerkText: {
+    color: colors.primary,
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  saleCta: {
+    alignSelf: 'center',
+    zIndex: 2,
+    marginTop: 4,
+    backgroundColor: colors.primary,
+    borderRadius: radii.pill,
+    paddingHorizontal: 24,
+    paddingVertical: 13,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  saleCtaText: {
+    color: colors.primaryInk,
+    fontSize: 17,
+    fontWeight: '800',
+  },
   saleBottom: {
     flexDirection: 'row',
     gap: 10,
-    paddingHorizontal: 18,
+    paddingTop: 16,
     paddingBottom: 16,
+    justifyContent: 'center',
   },
   timerBox: {
     backgroundColor: colors.primary,
     borderRadius: radii.sm,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
     alignItems: 'center',
-    minWidth: 52,
+    minWidth: 58,
   },
-  timerNum: { fontSize: 16, fontWeight: '900', color: colors.primaryInk },
-  timerLbl: { fontSize: 9, fontWeight: '700', color: colors.primaryInk, marginTop: 2 },
-  saleImg: { height: 90, width: '100%', opacity: 0.35 },
+  timerNum: { fontSize: 20, fontWeight: '900', color: colors.primaryInk },
+  timerLbl: { fontSize: 11, fontWeight: '700', color: colors.primaryInk, marginTop: 2 },
   featuredGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    paddingHorizontal: H_PAD,
     gap: CARD_GAP,
+    paddingVertical: 10,
   },
   howTitle: {
     ...typography.subheading,
     color: colors.text,
     textAlign: 'center',
+    fontSize: 22,
+    lineHeight: 27,
     marginTop: 36,
     marginBottom: 16,
+  },
+  howTitleCompact: {
+    fontSize: 18,
+    lineHeight: 22,
+    marginTop: 24,
   },
   howRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     paddingHorizontal: H_PAD,
     gap: 12,
+  },
+  howRowNarrow: {
+    flexWrap: 'wrap',
   },
   howCard: {
     flexGrow: 1,
@@ -722,14 +1261,16 @@ const styles = StyleSheet.create({
   howCardTitle: {
     ...typography.micro,
     fontWeight: '800',
+    fontSize: 16,
+    lineHeight: 20,
     color: colors.text,
     textAlign: 'center',
   },
   howCardBody: {
-    fontSize: 10,
+    fontSize: 15,
     color: colors.textSecondary,
     textAlign: 'center',
-    lineHeight: 13,
+    lineHeight: 20,
   },
   soonRow: { paddingHorizontal: H_PAD, gap: 10, paddingBottom: 4 },
   soonCard: {
@@ -756,15 +1297,160 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   toolBanner: {
-    marginHorizontal: H_PAD,
     marginTop: 28,
     marginBottom: 8,
-    padding: 18,
+    paddingVertical: 22,
+    paddingHorizontal: 18,
     borderRadius: radii.lg,
     backgroundColor: colors.primaryMuted,
     borderWidth: 1,
     borderColor: colors.primary,
+    alignSelf: 'center',
+    width: '100%',
+    maxWidth: 480,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 16,
   },
-  toolTitle: { ...typography.subheading, color: colors.text, fontSize: 16 },
-  toolSub: { ...typography.caption, color: colors.textSecondary, marginTop: 4 },
+  toolBannerCompact: {
+    paddingVertical: 18,
+    paddingHorizontal: 14,
+  },
+  toolCopy: {
+    alignItems: 'center',
+    maxWidth: 420,
+  },
+  toolTitle: {
+    ...typography.subheading,
+    color: colors.text,
+    fontSize: 16,
+    textAlign: 'center',
+  },
+  toolSub: {
+    ...typography.caption,
+    color: colors.textSecondary,
+    marginTop: 4,
+    textAlign: 'center',
+  },
+  toolOrderBtn: {
+    backgroundColor: colors.primary,
+    borderRadius: radii.pill,
+    paddingHorizontal: 28,
+    paddingVertical: 12,
+    minHeight: 44,
+    minWidth: 140,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  toolOrderText: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: colors.primaryInk,
+  },
+  locBadge: {
+    marginTop: 14,
+    marginBottom: 8,
+    padding: 16,
+    borderRadius: radii.lg,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.primary,
+  },
+  locBadgeCompact: {
+    padding: 14,
+  },
+  locRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 16,
+  },
+  locRowCompact: {
+    flexDirection: 'column',
+    alignItems: 'stretch',
+    gap: 14,
+  },
+  locMain: {
+    flex: 1,
+    minWidth: 0,
+    gap: 12,
+  },
+  locTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  locIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  locCopy: {
+    flex: 1,
+    minWidth: 0,
+  },
+  locKicker: {
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: 1.2,
+    color: colors.primary,
+  },
+  locCity: {
+    fontSize: 28,
+    lineHeight: 34,
+    fontWeight: '800',
+    color: colors.text,
+    marginTop: 2,
+  },
+  locCityCompact: {
+    fontSize: 24,
+    lineHeight: 30,
+  },
+  locMeta: {
+    fontSize: 15,
+    lineHeight: 20,
+    fontWeight: '500',
+    color: colors.textSecondary,
+    marginTop: 4,
+  },
+  locPills: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  locPill: {
+    borderWidth: 1,
+    borderColor: 'rgba(212, 160, 23, 0.45)',
+    backgroundColor: 'rgba(212, 160, 23, 0.12)',
+    borderRadius: radii.pill,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  locPillText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.primary,
+  },
+  locBtn: {
+    backgroundColor: colors.primary,
+    borderRadius: radii.pill,
+    paddingHorizontal: 18,
+    paddingVertical: 12,
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  locBtnCompact: {
+    alignSelf: 'stretch',
+  },
+  locBtnText: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: colors.primaryInk,
+  },
 });

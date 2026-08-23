@@ -8,7 +8,14 @@ type Props = ImageProps & {
 };
 
 /** expo-image wrapper with muted fallback when load fails. */
-export function SafeImage({ fallbackTint = colors.surfaceMuted, style, onError, ...rest }: Props) {
+export function SafeImage({
+  fallbackTint = colors.surfaceMuted,
+  style,
+  onError,
+  cachePolicy = 'memory-disk',
+  transition = 80,
+  ...rest
+}: Props) {
   const [failed, setFailed] = useState(false);
 
   if (failed) {
@@ -18,6 +25,8 @@ export function SafeImage({ fallbackTint = colors.surfaceMuted, style, onError, 
   return (
     <Image
       {...rest}
+      cachePolicy={cachePolicy}
+      transition={transition}
       style={style}
       onError={(e) => {
         setFailed(true);

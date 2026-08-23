@@ -123,17 +123,25 @@ function mapApiOrder(row: Record<string, unknown>): PlacedOrder {
 
 export const ordersService = {
   async list(userId?: string): Promise<PlacedOrder[]> {
-    if (userId && shouldUseApi(userId) && (await getAccessToken())) {
+    const all = await readAll();
+    const localFiltered = userId ? all.filter((o) => o.userId === userId) : all;
+
+    if (userId && (await hasApiSession())) {
       try {
         const res = await apiClient.get<{ orders: Record<string, unknown>[] }>('/api/v1/orders');
-        return (res.orders ?? []).map(mapApiOrder);
+        const remote = (res.orders ?? []).map(mapApiOrder);
+        const byId = new Map(localFiltered.map((o) => [o.id, o]));
+        for (const o of remote) byId.set(o.id, o);
+        const merged = [...byId.values()].sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+        const others = all.filter((o) => o.userId !== userId);
+        await writeAll([...others, ...merged]);
+        return merged;
       } catch {
-        /* fall through */
+        /* fall through to local cache */
       }
     }
-    const all = await readAll();
-    const filtered = userId ? all.filter((o) => o.userId === userId) : all;
-    return filtered.sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+
+    return localFiltered.sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
   },
 
   async getById(orderId: string): Promise<PlacedOrder | null> {
@@ -156,7 +164,22 @@ export const ordersService = {
       }
     }
     const all = await readAll();
-    return all.find((o) => o.id === orderId) ?? null;
+    const local = all.find((o) => o.id === orderId);
+    if (local) return local;
+    if (await hasApiSession()) {
+      try {
+        const res = await apiClient.get<{ order: Record<string, unknown> }>(`/api/v1/orders/${orderId}`);
+        if (res.order) {
+          const mapped = mapApiOrder(res.order);
+          all.unshift(mapped);
+          await writeAll(all);
+          return mapped;
+        }
+      } catch {
+        /* ignore */
+      }
+    }
+    return null;
   },
 
   async validateStock(input: PlaceOrderInput) {
@@ -193,7 +216,7 @@ export const ordersService = {
       };
     });
 
-    if (shouldUseApi(input.userId) && (await getAccessToken())) {
+    if (await hasApiSession()) {
       try {
         const res = await apiClient.post<{
           order: {
@@ -256,7 +279,10 @@ export const ordersService = {
           const issues = await stockService.validateLines(lines);
           return { ok: false, reason: 'stock', issues };
         }
-        throw e;
+        if (e instanceof ApiError && e.status >= 400 && e.status < 500) {
+          throw e;
+        }
+        /* network / server down — store on device */
       }
     }
 
@@ -300,7 +326,7 @@ export const ordersService = {
   ): Promise<
     PlacedOrder | null | { error: 'stock'; issues: Awaited<ReturnType<typeof stockService.validateLines>> }
   > {
-    if (await getAccessToken()) {
+    if (await hasApiSession()) {
       try {
         const res = await apiClient.post<{
           order: {
@@ -326,6 +352,7 @@ export const ordersService = {
           await writeAll(all);
           return all[idx];
         }
+        return this.getById(orderId);
       } catch (e) {
         const msg = e instanceof Error ? e.message : '';
         if (msg.toLowerCase().includes('stock')) {

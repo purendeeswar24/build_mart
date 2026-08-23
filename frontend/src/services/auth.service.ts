@@ -32,7 +32,7 @@ export const ROLE_OPTIONS: { value: UserRole; label: string }[] = [
 ];
 
 function toE164(phone: string) {
-  const digits = phone.replace(/\D/g, '').slice(-10);
+  const digits = last10Digits(phone);
   return `+91${digits}`;
 }
 

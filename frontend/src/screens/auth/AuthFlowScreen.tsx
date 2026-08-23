@@ -8,6 +8,7 @@ import {
   StyleSheet,
   Text,
   TextInput,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -67,7 +68,14 @@ export function AuthFlowScreen({ asModal, onClose, onDone }: Props) {
       style={[styles.root, { paddingTop: asModal ? 12 : insets.top + 12 }]}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      <ScrollView
+        contentContainerStyle={[
+          styles.content,
+          { paddingHorizontal: hPad, paddingBottom: 40 + (asModal ? 12 : insets.bottom) },
+        ]}
+        keyboardShouldPersistTaps="handled"
+      >
+        <View style={styles.form}>
         {asModal ? (
           <Pressable onPress={onClose} style={styles.closeRow}>
             <Text style={styles.closeText}>Close</Text>
@@ -116,7 +124,9 @@ export function AuthFlowScreen({ asModal, onClose, onDone }: Props) {
               onChangeText={setPassword}
               secureTextEntry
               placeholder="••••••••"
-              placeholderTextColor="#5C596A"
+              placeholderTextColor={PLACEHOLDER}
+              selectionColor={colors.primary}
+              cursorColor={INPUT_TEXT}
               style={styles.input}
             />
             <Pressable
@@ -349,10 +359,24 @@ export function AuthFlowScreen({ asModal, onClose, onDone }: Props) {
         ) : null}
 
         {error ? <Text style={styles.error}>{error}</Text> : null}
+        </View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
 }
+
+const PLACEHOLDER = 'rgba(255,255,255,0.55)';
+const INPUT_TEXT = '#FFFFFF';
+
+const inputWeb =
+  Platform.OS === 'web'
+    ? ({
+        outlineStyle: 'none' as const,
+        outlineWidth: 0,
+        color: INPUT_TEXT,
+        caretColor: INPUT_TEXT,
+      } as const)
+    : null;
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.secondary },
@@ -391,7 +415,9 @@ const styles = StyleSheet.create({
   cardTitle: { color: colors.textInverse, fontSize: 16, fontWeight: '700' },
   label: { fontSize: 11, color: '#8B889B', marginBottom: 6, marginTop: 2 },
   input: {
-    backgroundColor: colors.secondaryMuted,
+    backgroundColor: '#2A2A2A',
+    borderWidth: 1,
+    borderColor: '#3F3F46',
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 12,
@@ -404,7 +430,9 @@ const styles = StyleSheet.create({
   phoneRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.secondaryMuted,
+    backgroundColor: '#2A2A2A',
+    borderWidth: 1,
+    borderColor: '#3F3F46',
     borderRadius: 12,
     paddingHorizontal: 14,
     marginBottom: 14,
@@ -439,7 +467,8 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingVertical: 13,
     alignItems: 'center',
-    marginTop: 12,
+    marginTop: 4,
+    width: '100%',
   },
   secondaryBtnText: { color: '#C9C6D4', fontSize: 13, fontWeight: '600' },
   linkBtn: { marginTop: 16, alignItems: 'center' },
